@@ -1,20 +1,42 @@
+import { Button } from '@/components/ui/button';
+
 function App() {
   return (
-    <div className="min-h-screen bg-blue-500 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-lg max-w-md">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">
-          Tailwind v4 Test
-        </h1>
-        <p className="text-gray-600 mb-4">
-          If you see this blue background and white card, Tailwind v4 is working! 🎉
-        </p>
-        <div className="flex gap-2">
-          <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-            Primary
-          </button>
-          <button className="px-4 py-2 bg-gray-200 text-gray-900 rounded hover:bg-gray-300 transition">
-            Secondary
-          </button>
+    <div className="min-h-screen bg-slate-50 p-8">
+      <div className="max-w-4xl mx-auto space-y-8">
+        <div>
+          <h1 className="text-4xl font-bold text-slate-900 mb-2">
+            RHBC CRM
+          </h1>
+          <p className="text-slate-600">
+            Tailwind v4 + shadcn/ui working! 🎉
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <h2 className="text-2xl font-semibold text-slate-900">
+            Button Variants
+          </h2>
+
+          <div className="flex flex-wrap gap-4">
+            <Button>Default</Button>
+            <Button variant="secondary">Secondary</Button>
+            <Button variant="destructive">Destructive</Button>
+            <Button variant="outline">Outline</Button>
+            <Button variant="ghost">Ghost</Button>
+            <Button variant="link">Link</Button>
+          </div>
+
+          <div className="flex flex-wrap gap-4">
+            <Button size="sm">Small</Button>
+            <Button size="default">Default</Button>
+            <Button size="lg">Large</Button>
+          </div>
+
+          <div className="flex flex-wrap gap-4">
+            <Button disabled>Disabled</Button>
+            <Button variant="outline" disabled>Disabled Outline</Button>
+          </div>
         </div>
       </div>
     </div>
