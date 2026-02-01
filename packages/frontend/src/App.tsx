@@ -1,11 +1,28 @@
+import { useState } from 'react';
+import type { Family } from '@rhbc-crm/shared';
 import { mockFamilies, mockPeople } from './data/mockData';
 import { FamilyList } from './components/FamilyList';
+import { FamilyDetails } from './components/FamilyDetails';
 import { StatsCard } from './components/StatsCard';
 
 function App() {
+  const [selectedFamily, setSelectedFamily] = useState<Family | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+
   const memberFamilies = mockFamilies.filter(f => f.status === 'member');
   const guestFamilies = mockFamilies.filter(f => f.status === 'guest');
   const children = mockPeople.filter(p => p.role === 'child');
+
+  const handleViewDetails = (family: Family) => {
+    setSelectedFamily(family);
+    setIsDetailsOpen(true);
+  };
+
+  const handleCloseDetails = () => {
+    setIsDetailsOpen(false);
+    // Small delay before clearing to allow dialog close animation
+    setTimeout(() => setSelectedFamily(null), 200);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -52,10 +69,20 @@ function App() {
                 {mockFamilies.length} {mockFamilies.length === 1 ? 'family' : 'families'}
               </div>
             </div>
-            <FamilyList families={mockFamilies} />
+            <FamilyList
+              families={mockFamilies}
+              onViewDetails={handleViewDetails}
+            />
           </div>
         </div>
       </div>
+
+      {/* Family Details Dialog */}
+      <FamilyDetails
+        family={selectedFamily}
+        open={isDetailsOpen}
+        onClose={handleCloseDetails}
+      />
     </div>
   );
 }
