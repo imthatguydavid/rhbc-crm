@@ -30,12 +30,12 @@ export interface Person {
   firstName: string;
 
   /**
-   * Contact phone number (normalized to digits only).
+   * Contact phone number (normalized to digits only). optional for children
    * Stored as digits, displayed with formatting: (XXX) XXX-XXXX
    *
    * @example "5551234567"
    */
-  phone: string;
+  phone?: string;
 
   /**
    * Email address for communication.

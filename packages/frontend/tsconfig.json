@@ -29,7 +29,8 @@
     /* Path Mapping */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@rhbc-crm/shared": ["../shared/src"]
     }
   },
   "include": ["src"],
