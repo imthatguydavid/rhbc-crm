@@ -1,0 +1,25 @@
+{
+  "name": "rhbc-crm",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "author": "David Kim <davidjjkim@gmail.com>",
+  "license": "MIT",
+  "workspaces": [
+    "packages/*"
+  ],
+  "packageManager": "yarn@4.12.0",
+  "scripts": {
+    "frontend": "yarn workspaces @rhbc-crm/frontend dev",
+    "backend": "yarn workspaces @rhbc-crm/backend dev",
+    "install:all": "yarn install",
+    "clean": "rm -rf node_modules packages/*/node_modules"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
+    "eslint": "^9.39.2",
+    "prettier": "^3.2.4",
+    "typescript": "^5.9.3"
+  }
+}
