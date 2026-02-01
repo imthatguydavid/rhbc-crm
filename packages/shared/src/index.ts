@@ -9,3 +9,5 @@
 export * from './types/Family';
 export * from './types/Person';
 export * from './types/CheckIn';
+export * from './types/Event';
+export * from './types/EventRegistration';
