@@ -33,3 +33,14 @@ Thumbs.db
 # Logs
 logs/
 *.log
+
+# Yarn (PnP)
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+!.pnp.cjs
+!.pnp.loader.mjs
