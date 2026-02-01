@@ -13,12 +13,17 @@ const RAW_RUNTIME_STATE =
     {\
       "name": "rhbc-crm",\
       "reference": "workspace:."\
+    },\
+    {\
+      "name": "@rhbc-crm/shared",\
+      "reference": "workspace:packages/shared"\
     }\
   ],\
   "enableTopLevelFallback": true,\
   "ignorePatternData": "(^(?:\\\\.yarn\\\\/sdks(?:\\\\/(?!\\\\.{1,2}(?:\\\\/|$))(?:(?:(?!(?:^|\\\\/)\\\\.{1,2}(?:\\\\/|$)).)*?)|$))$)",\
   "pnpZipBackend": "libzip",\
   "fallbackExclusionList": [\
+    ["@rhbc-crm/shared", ["workspace:packages/shared"]],\
     ["rhbc-crm", ["workspace:."]]\
   ],\
   "fallbackPool": [\
@@ -185,6 +190,16 @@ const RAW_RUNTIME_STATE =
           ["@humanwhocodes/retry", "npm:0.4.3"]\
         ],\
         "linkType": "HARD"\
+      }]\
+    ]],\
+    ["@rhbc-crm/shared", [\
+      ["workspace:packages/shared", {\
+        "packageLocation": "./packages/shared/",\
+        "packageDependencies": [\
+          ["@rhbc-crm/shared", "workspace:packages/shared"],\
+          ["typescript", "patch:typescript@npm%3A5.9.3#optional!builtin<compat/typescript>::version=5.9.3&hash=5786d5"]\
+        ],\
+        "linkType": "SOFT"\
       }]\
     ]],\
     ["@types/estree", [\
