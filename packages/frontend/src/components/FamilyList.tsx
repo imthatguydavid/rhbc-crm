@@ -13,9 +13,10 @@ import { getPeopleByFamily } from '@/data/mockData';
 
 interface FamilyListProps {
   families: Family[];
+  onViewDetails: (family: Family) => void;  // ← New prop
 }
 
-export function FamilyList({ families }: FamilyListProps) {
+export function FamilyList({ families, onViewDetails }: FamilyListProps) {
   // Compute family stats
   const familyStats = useMemo(() => {
     return families.map(family => {
@@ -74,7 +75,11 @@ export function FamilyList({ families }: FamilyListProps) {
                   </span>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="sm">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onViewDetails(family)}  // ← New click handler
+                  >
                     View Details
                   </Button>
                 </TableCell>
