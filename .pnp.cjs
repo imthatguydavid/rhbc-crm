@@ -800,6 +800,7 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "./packages/frontend/",\
         "packageDependencies": [\
           ["@rhbc-crm/frontend", "workspace:packages/frontend"],\
+          ["@types/node", "npm:25.1.0"],\
           ["@types/react", "npm:18.3.27"],\
           ["@types/react-dom", "virtual:f8d34d36032259c79d75ea60860bc944b5bb8f9e121818930dd9f03e6b3b087c0bdaf3be87db5b3d7bedd885628cf894d79a235f9b20f742bcb3a93670b0eced#npm:18.3.7"],\
           ["@vitejs/plugin-react", "virtual:f8d34d36032259c79d75ea60860bc944b5bb8f9e121818930dd9f03e6b3b087c0bdaf3be87db5b3d7bedd885628cf894d79a235f9b20f742bcb3a93670b0eced#npm:4.7.0"],\
@@ -1114,6 +1115,16 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "../../.yarn/berry/cache/@types-json-schema-npm-7.0.15-fd16381786-10c0.zip/node_modules/@types/json-schema/",\
         "packageDependencies": [\
           ["@types/json-schema", "npm:7.0.15"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
+    ["@types/node", [\
+      ["npm:25.1.0", {\
+        "packageLocation": "../../.yarn/berry/cache/@types-node-npm-25.1.0-a9cb5171b1-10c0.zip/node_modules/@types/node/",\
+        "packageDependencies": [\
+          ["@types/node", "npm:25.1.0"],\
+          ["undici-types", "npm:7.16.0"]\
         ],\
         "linkType": "HARD"\
       }]\
@@ -3018,6 +3029,15 @@ const RAW_RUNTIME_STATE =
         "linkType": "HARD"\
       }]\
     ]],\
+    ["undici-types", [\
+      ["npm:7.16.0", {\
+        "packageLocation": "../../.yarn/berry/cache/undici-types-npm-7.16.0-0e23b08124-10c0.zip/node_modules/undici-types/",\
+        "packageDependencies": [\
+          ["undici-types", "npm:7.16.0"]\
+        ],\
+        "linkType": "HARD"\
+      }]\
+    ]],\
     ["unique-filename", [\
       ["npm:5.0.0", {\
         "packageLocation": "../../.yarn/berry/cache/unique-filename-npm-5.0.0-605f54f18e-10c0.zip/node_modules/unique-filename/",\
@@ -3086,7 +3106,7 @@ const RAW_RUNTIME_STATE =
           ["@types/jiti", null],\
           ["@types/less", null],\
           ["@types/lightningcss", null],\
-          ["@types/node", null],\
+          ["@types/node", "npm:25.1.0"],\
           ["@types/sass", null],\
           ["@types/sass-embedded", null],\
           ["@types/stylus", null],\
