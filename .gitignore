@@ -44,3 +44,7 @@ logs/
 .pnp.*
 !.pnp.cjs
 !.pnp.loader.mjs
+
+# Lambda deployment artifacts
+packages/backend/deploy/
+*.zip
