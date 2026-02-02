@@ -73,6 +73,7 @@ export function AddFamilyDialog({ open, onClose, onAddFamily }: AddFamilyDialogP
       status: values.status,
       createdAt: now,
       updatedAt: now,
+      pk: 'FAMILY',
     };
 
     // Parent data to be added separately

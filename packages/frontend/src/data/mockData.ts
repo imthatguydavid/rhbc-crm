@@ -6,6 +6,7 @@ import type { Family, Person, CheckIn } from '@rhbc-crm/shared';
 export const mockFamilies: Family[] = [
   {
     familyId: 'fam-001',
+    pk: 'FAMILY',
     lastName: 'Johnson',
     status: 'member',
     createdAt: '2024-01-15T10:00:00Z',
@@ -13,6 +14,7 @@ export const mockFamilies: Family[] = [
   },
   {
     familyId: 'fam-002',
+    pk: 'FAMILY',
     lastName: 'Smith',
     status: 'member',
     createdAt: '2024-02-20T14:30:00Z',
@@ -20,6 +22,7 @@ export const mockFamilies: Family[] = [
   },
   {
     familyId: 'fam-003',
+    pk: 'FAMILY',
     lastName: 'Garcia',
     status: 'guest',
     createdAt: '2024-11-01T09:15:00Z',
@@ -27,6 +30,7 @@ export const mockFamilies: Family[] = [
   },
   {
     familyId: 'fam-004',
+    pk: 'FAMILY',
     lastName: 'Williams',
     status: 'member',
     createdAt: '2023-06-10T11:45:00Z',
@@ -34,6 +38,7 @@ export const mockFamilies: Family[] = [
   },
   {
     familyId: 'fam-005',
+    pk: 'FAMILY',
     lastName: 'Chen',
     status: 'guest',
     createdAt: '2025-01-28T08:00:00Z',

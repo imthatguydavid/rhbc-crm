@@ -1,93 +1,115 @@
 /**
- * Represents a childcare check-in record.
+ * Represents a child check-in/check-out record for childcare tracking.
  *
- * Tracks when children arrive at childcare and their secure
- * check-out via PIN verification.
+ * Each check-in creates a record when a child arrives, generates a unique
+ * PIN for secure pickup, and tracks the checkout when child is released.
+ * Supports both PIN-based checkout and manual override for emergencies.
  */
 export interface CheckIn {
   /**
-   * Unique identifier for this check-in.
+   * Unique identifier for this check-in event.
+   * Generated as a timestamp-based ID when child is checked in.
    *
-   * @example "770e8400-e29b-41d4-a716-446655440002"
+   * @example "chk-1738425600000-m9x4p7w"
    */
   checkInId: string;
 
   /**
    * Reference to the child being checked in.
-   * Foreign key to Person.personId (must be role='child').
+   * Links to Person.personId where Person.role === 'child'.
    *
-   * @example "660e8400-e29b-41d4-a716-446655440001"
+   * @example "per-1738425600000-a5n8k3r"
    */
   childId: string;
 
   /**
    * Reference to the child's family.
-   * Foreign key to Family.familyId.
-   * Denormalized for faster queries (instead of joining through Person).
+   * Links to Family.familyId for quick family lookups.
+   * Denormalized for performance - avoids joining through Person.
    *
-   * @example "550e8400-e29b-41d4-a716-446655440000"
+   * @example "fam-1738425600000-x7k9m2p"
    */
   familyId: string;
 
   /**
    * ISO 8601 timestamp when child was checked in.
+   * Recorded at the moment parent drops off child.
    *
-   * @example "2026-01-31T10:30:00.000Z"
+   * @example "2026-02-02T09:15:00.000Z"
    */
   checkInTime: string;
 
   /**
    * ISO 8601 timestamp when child was checked out.
-   * Null if child is currently checked in.
+   * Null while child is still in childcare.
+   * Set when parent successfully retrieves child.
    *
-   * @example "2026-01-31T12:00:00.000Z"
+   * @example "2026-02-02T11:45:00.000Z"
+   * @example null  // Child still checked in
    */
   checkOutTime: string | null;
 
   /**
-   * 4-digit PIN for secure check-out.
-   * Randomly generated at check-in.
-   * Parent must provide this PIN to pick up child.
+   * 4-digit PIN code required for checkout.
+   * Generated automatically at check-in time.
+   * Parent must provide this PIN to retrieve child.
    *
-   * @example "7392"
+   * Security feature prevents unauthorized pickups.
+   *
+   * @example "1234"
+   * @example "9876"
    */
   checkOutPin: string;
 
   /**
-   * How the child was checked out.
-   * - "pin": Normal check-out with PIN verification
-   * - "manual_override": Staff override (with notes explaining why)
-   * Null if not yet checked out.
+   * Method used to check out the child.
+   * - "pin": Normal checkout with correct PIN entry
+   * - "manual_override": Emergency checkout without PIN (requires notes)
+   * - null: Child not yet checked out
+   *
+   * @example "pin"
+   * @example "manual_override"
+   * @example null  // Still checked in
    */
   checkOutMethod: 'pin' | 'manual_override' | null;
 
   /**
-   * Explanation for manual override check-out.
+   * Explanation for manual override checkout.
    * Required when checkOutMethod is "manual_override".
+   * Documents why normal PIN procedure was bypassed.
+   *
+   * Used for audit trail and accountability.
    *
    * @example "Parent forgot PIN, verified ID"
+   * @example "Medical emergency, released to ambulance"
+   * @example null  // Normal PIN checkout or still checked in
    */
   manualOverrideNotes: string | null;
 
   /**
-   * Room or location where child is checked in.
-   * Optional in MVP, will be used in post-MVP for room assignment.
+   * Childcare room or class assignment.
+   * Indicates where child was placed for age-appropriate care.
    *
-   * @example "Nursery" | "Toddler Room" | "Elementary"
+   * @example "Nursery A"
+   * @example "Toddler Room"
+   * @example "Preschool"
+   * @example "Elementary - Room 3"
    */
-  room: string | null;
+  room: string;
 
   /**
-   * ISO 8601 timestamp when record was created.
+   * ISO 8601 timestamp when check-in record was created.
+   * Usually matches checkInTime but represents database record creation.
    *
-   * @example "2026-01-31T10:30:00.000Z"
+   * @example "2026-02-02T09:15:00.000Z"
    */
   createdAt: string;
 
   /**
-   * ISO 8601 timestamp when record was last updated.
+   * ISO 8601 timestamp when check-in record was last updated.
+   * Updated when child is checked out or record is modified.
    *
-   * @example "2026-01-31T12:00:00.000Z"
+   * @example "2026-02-02T11:45:00.000Z"
    */
   updatedAt: string;
 }
