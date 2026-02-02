@@ -32,6 +32,9 @@ export function FamilyList({ families, onViewDetails }: FamilyListProps) {
     });
   }, [families]);
 
+  console.log('this is sparta!', families);
+  console.log('hail sparta!', familyStats);
+
   return (
     <div className="rounded-lg border bg-white shadow-sm">
       <Table>
