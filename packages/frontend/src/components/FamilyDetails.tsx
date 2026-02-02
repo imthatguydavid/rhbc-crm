@@ -6,20 +6,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { getPeopleByFamily } from '@/data/mockData';
 
 interface FamilyDetailsProps {
   family: Family | null;
+  people: Person[];  // ← Changed from importing mockPeople
   open: boolean;
   onClose: () => void;
 }
 
-export function FamilyDetails({ family, open, onClose }: FamilyDetailsProps) {
+export function FamilyDetails({ family, people, open, onClose }: FamilyDetailsProps) {
   if (!family) return null;
 
-  const people = getPeopleByFamily(family.familyId);
-  const parents = people.filter(p => p.role === 'parent');
-  const children = people.filter(p => p.role === 'child');
+  // Filter people for this family
+  const familyPeople = people.filter(p => p.familyId === family.familyId);
+  const parents = familyPeople.filter(p => p.role === 'parent');
+  const children = familyPeople.filter(p => p.role === 'child');
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -64,7 +65,7 @@ export function FamilyDetails({ family, open, onClose }: FamilyDetailsProps) {
           )}
 
           {/* Empty State */}
-          {people.length === 0 && (
+          {familyPeople.length === 0 && (
             <div className="text-center py-8 text-slate-500">
               No family members found
             </div>
@@ -139,7 +140,6 @@ function PersonCard({ person }: { person: Person }) {
 
 // Helper function to format phone numbers
 function formatPhone(phone: string): string {
-  // Assumes phone is stored as 10 digits: "7145551234"
   const cleaned = phone.replace(/\D/g, '');
   const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
   if (match) {

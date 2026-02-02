@@ -243,3 +243,17 @@ export function getParentsByFamily(familyId: string): Person[] {
 export function getActiveCheckIns(): CheckIn[] {
   return mockCheckIns.filter(checkIn => checkIn.checkOutTime === null);
 }
+
+/**
+ * Add a new family to mock data
+ */
+export function addMockFamily(family: Family): void {
+  mockFamilies.push(family);
+}
+
+/**
+ * Add a new person to mock data
+ */
+export function addMockPerson(person: Person): void {
+  mockPeople.push(person);
+}
