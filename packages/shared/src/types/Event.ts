@@ -1,117 +1,83 @@
 /**
- * Question configuration for event registration form.
- * Defines a custom question that event registrants will answer.
- */
-export interface Question {
-  /**
-   * Unique identifier for this question.
-   *
-   * @example "q_550e8400"
-   */
-  questionId: string;
-
-  /**
-   * The question text shown to registrants.
-   *
-   * @example "Do you have any dietary restrictions?"
-   */
-  text: string;
-
-  /**
-   * Type of input field to display.
-   * - "text": Free-form text input
-   * - "email": Email address input with validation
-   * - "phone": Phone number input with formatting
-   * - "checkbox": Yes/No checkbox
-   * - "dropdown": Select from predefined options
-   */
-  type: 'text' | 'email' | 'phone' | 'checkbox' | 'dropdown';
-
-  /**
-   * Whether this question must be answered.
-   * If true, form cannot be submitted without an answer.
-   */
-  required: boolean;
-
-  /**
-   * Available options for dropdown questions.
-   * Only used when type is "dropdown".
-   *
-   * @example ["Vegetarian", "Vegan", "Gluten-free", "No restrictions"]
-   */
-  options?: string[];
-}
-
-/**
- * Represents a church event that people can register for.
+ * Represents a church event or activity available for registration.
  *
- * Events have custom registration forms with configurable questions.
- * Each event generates a unique shareable link for public registration.
+ * Events can be services, classes, retreats, or other church activities
+ * that members and guests can register for. Supports capacity limits
+ * and tracks event details for communication and planning.
  */
 export interface Event {
   /**
    * Unique identifier for this event.
+   * Generated as a timestamp-based ID when event is created.
    *
-   * @example "880e8400-e29b-41d4-a716-446655440003"
+   * @example "evt-1738425600000-k2n9r5x"
    */
   eventId: string;
 
   /**
-   * Event name/title.
+   * Event name or title.
+   * Displayed in event listings and registration forms.
    *
-   * @example "Community Picnic" | "Christmas Service" | "Youth Retreat"
+   * @example "Sunday Service - 10:00 AM"
+   * @example "Marriage Enrichment Retreat"
+   * @example "Youth Group Game Night"
    */
-  title: string;
+  name: string;
 
   /**
    * Detailed event description.
-   * Shown on registration form to help people understand the event.
+   * Provides additional context about what to expect,
+   * what to bring, target audience, etc.
    *
-   * @example "Join us for our annual community picnic with games, food, and fellowship!"
+   * @example "Join us for worship, teaching, and fellowship"
+   * @example "Weekend retreat for married couples. Includes meals and lodging."
+   * @example "Games, pizza, and fun for middle and high school students"
    */
   description: string;
 
   /**
-   * ISO 8601 timestamp for when the event occurs.
+   * ISO 8601 timestamp for event date and time.
+   * When the event is scheduled to begin.
    *
-   * @example "2026-06-15T14:00:00.000Z"
+   * @example "2026-02-09T10:00:00.000Z"  // Sunday 10 AM
+   * @example "2026-03-15T18:30:00.000Z"  // Friday 6:30 PM
    */
   date: string;
 
   /**
-   * Maximum number of registrations allowed.
-   * Registration is closed once this limit is reached.
+   * Physical location or venue for the event.
+   * Can be a building, room, or off-site address.
    *
-   * @example 100
+   * @example "Main Sanctuary"
+   * @example "Fellowship Hall"
+   * @example "Camp Cedar Crest, 123 Mountain Rd"
    */
-  capacity: number;
+  location: string;
 
   /**
-   * Custom questions for this event's registration form.
-   * Admin can add/remove/reorder questions as needed.
+   * Maximum number of registrants allowed.
+   * Null means unlimited capacity.
+   * Used to prevent over-booking and manage logistics.
    *
-   * @example [
-   *   {
-   *     questionId: "q1",
-   *     text: "How many people in your group?",
-   *     type: "text",
-   *     required: true
-   *   }
-   * ]
+   * @example 200  // Sanctuary seats 200
+   * @example 30   // Small group limit
+   * @example null // Unlimited (like regular Sunday service)
    */
-  questions: Question[];
+  capacity: number | null;
 
   /**
-   * ISO 8601 timestamp when event was created.
+   * ISO 8601 timestamp when event record was created.
+   * Used for tracking when event was added to system.
    *
-   * @example "2026-01-31T12:00:00.000Z"
+   * @example "2026-01-15T08:00:00.000Z"
    */
   createdAt: string;
 
   /**
-   * ISO 8601 timestamp when event was last updated.
+   * ISO 8601 timestamp when event record was last updated.
+   * Updated whenever event details are modified.
    *
-   * @example "2026-01-31T14:30:00.000Z"
+   * @example "2026-01-20T14:30:00.000Z"
    */
   updatedAt: string;
 }

@@ -1,89 +1,73 @@
 /**
- * A response to a single event registration question.
- * Links a question to the registrant's answer.
- */
-export interface Response {
-  /**
-   * Reference to the question being answered.
-   * Corresponds to Question.questionId in the Event.
-   *
-   * @example "q_550e8400"
-   */
-  questionId: string;
-
-  /**
-   * The registrant's answer to this question.
-   * Stored as string regardless of question type:
-   * - text/email/phone: user's input
-   * - checkbox: "true" or "false"
-   * - dropdown: selected option value
-   *
-   * @example "Vegetarian" | "john@example.com" | "5551234567" | "true"
-   */
-  answer: string;
-}
-
-/**
- * Represents a registration for an event.
+ * Represents a person's registration for a specific event.
  *
- * Tracks who signed up, when they registered, and their answers
- * to custom event questions. Uses email as the primary identifier
- * (no phone matching for event registrations).
+ * Tracks who has signed up for events using email as the primary identifier.
+ * Automatically links to existing families when email matches, enabling
+ * streamlined registration for returning attendees.
  */
 export interface EventRegistration {
   /**
    * Unique identifier for this registration.
+   * Generated as a timestamp-based ID when registration is created.
    *
-   * @example "990e8400-e29b-41d4-a716-446655440004"
+   * @example "reg-1738425600000-t7m3n9k"
    */
   registrationId: string;
 
   /**
    * Reference to the event being registered for.
-   * Foreign key to Event.eventId.
+   * Links to Event.eventId.
    *
-   * @example "880e8400-e29b-41d4-a716-446655440003"
+   * @example "evt-1738425600000-k2n9r5x"
    */
   eventId: string;
 
   /**
-   * Registrant's email address.
-   * Primary identifier for registration (prevents duplicates).
-   * Used for matching and communication.
+   * Email address of the registrant.
+   * Used as primary identifier to match with existing families.
+   * If email matches a Person.email, familyId can be auto-populated.
    *
-   * @example "sarah.jones@example.com"
+   * @example "john.smith@email.com"
+   * @example "guest@example.com"
    */
   email: string;
 
   /**
-   * Answers to all event registration questions.
-   * Array of questionId + answer pairs.
+   * Registrant's first name (given name).
+   * Collected even if person is not yet in system.
    *
-   * @example [
-   *   { questionId: "q1", answer: "No restrictions" },
-   *   { questionId: "q2", answer: "5551234567" }
-   * ]
+   * @example "John"
+   * @example "Sarah"
    */
-  responses: Response[];
+  firstName: string;
+
+  /**
+   * Registrant's last name (surname).
+   * Used along with firstName for identification.
+   *
+   * @example "Smith"
+   * @example "Garcia"
+   */
+  lastName: string;
+
+  /**
+   * Reference to registrant's family, if known.
+   * Automatically linked when email matches existing Person record.
+   * Null for first-time visitors or guests not yet in database.
+   *
+   * This enables quick lookup of family information and
+   * helps identify returning vs. new attendees.
+   *
+   * @example "fam-1738425600000-x7k9m2p"  // Known family
+   * @example null  // New guest, no family record yet
+   */
+  familyId: string | null;
 
   /**
    * ISO 8601 timestamp when registration was submitted.
+   * Used for tracking sign-up order and confirmation timing.
    *
-   * @example "2026-02-15T18:45:00.000Z"
+   * @example "2026-02-01T14:30:00.000Z"
    */
   registeredAt: string;
-
-  /**
-   * ISO 8601 timestamp when record was created.
-   *
-   * @example "2026-02-15T18:45:00.000Z"
-   */
-  createdAt: string;
-
-  /**
-   * ISO 8601 timestamp when record was last updated.
-   *
-   * @example "2026-02-15T18:45:00.000Z"
-   */
-  updatedAt: string;
 }
