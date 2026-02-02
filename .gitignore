@@ -48,3 +48,6 @@ logs/
 # Lambda deployment artifacts
 packages/backend/deploy/
 *.zip
+# Environment variables (keep local configuration)
+.env.local
+.env.*.local
