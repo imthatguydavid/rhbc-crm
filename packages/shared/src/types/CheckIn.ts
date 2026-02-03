@@ -87,6 +87,21 @@ export interface CheckIn {
   manualOverrideNotes: string | null;
 
   /**
+   * Current status of the check-in.
+   * - "active": Child is currently checked in (not yet picked up)
+   * - "completed": Child has been checked out (picked up by parent)
+   *
+   * This field enables efficient querying for active check-ins.
+   * Without it, we'd need to scan for checkOutTime === null (expensive).
+   *
+   * Changes from "active" to "completed" when child is checked out.
+   *
+   * @example "active"   // Child still in childcare
+   * @example "completed"  // Child has been picked up
+   */
+  status: 'active' | 'completed';
+
+  /**
    * Childcare room or class assignment.
    * Indicates where child was placed for age-appropriate care.
    *
@@ -112,4 +127,6 @@ export interface CheckIn {
    * @example "2026-02-02T11:45:00.000Z"
    */
   updatedAt: string;
+
+
 }
