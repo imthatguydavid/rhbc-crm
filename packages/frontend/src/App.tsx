@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import { FamiliesPage } from '@/pages/FamiliesPage';
 import { CheckInPage } from '@/pages/CheckInPage';
 import { CheckOutPage } from '@/pages/CheckOutPage';
+import { ActiveCheckInsPage } from './pages/ActiveCheckInsPage';
 
 function App() {
   return (
@@ -38,6 +39,12 @@ function App() {
                 >
                   Check-Out
                 </Link>
+                <Link
+                  to="/active"
+                  className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-md"
+                >
+                  Active
+                </Link>
               </nav>
             </div>
           </div>
@@ -49,6 +56,7 @@ function App() {
             <Route path="/" element={<FamiliesPage />} />
             <Route path="/checkin" element={<CheckInPage />} />
             <Route path="/checkout" element={<CheckOutPage />} />
+            <Route path="/active" element={<ActiveCheckInsPage />} />
           </Routes>
         </div>
       </div>
