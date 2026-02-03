@@ -134,3 +134,147 @@ export async function getFamilyById(familyId: string) {
   const data = await response.json();
   return data; // Returns { family, people }
 }
+
+/**
+ * Checks in a child to childcare and generates a secure PIN.
+ *
+ * Creates a check-in record in DynamoDB with an automatically generated
+ * 4-digit PIN that parents must provide at pickup. The PIN is returned
+ * immediately and should be displayed prominently to the parent.
+ *
+ * @param data - Check-in information
+ * @param data.childId - Unique child identifier from Person table
+ * @param data.familyId - Unique family identifier
+ * @param data.room - Childcare room assignment (e.g., "Nursery", "Toddler Room")
+ *
+ * @returns Promise that resolves to check-in record with PIN
+ * @returns Returns { checkIn: CheckIn, pin: string }
+ *
+ * @throws {Error} If child is already checked in (400 Bad Request)
+ * @throws {Error} If required fields are missing (400 Bad Request)
+ * @throws {Error} If API request fails (500 Internal Server Error)
+ *
+ * @example
+ * ```typescript
+ * const result = await checkInChild({
+ *   childId: 'per-1738425600000-abc123',
+ *   familyId: 'fam-1738425600000-xyz789',
+ *   room: 'Nursery'
+ * });
+ *
+ * console.log(`Check-in created: ${result.checkIn.checkInId}`);
+ * console.log(`PIN for pickup: ${result.pin}`);
+ * // Display PIN prominently: result.pin is a 4-digit string like "4289"
+ * ```
+ */
+export async function checkInChild(data: {
+  childId: string;
+  familyId: string;
+  room: string;
+}) {
+  const response = await fetch(`${API_BASE_URL}/checkin`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to check in child: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
+
+/**
+ * Retrieves all children currently checked in to childcare.
+ *
+ * Queries DynamoDB using status-checkInTime-index GSI to efficiently
+ * fetch only active check-ins (children not yet picked up). Results are
+ * sorted by check-in time with newest first.
+ *
+ * This endpoint uses Query operation (not Scan) for optimal performance.
+ *
+ * @returns Promise that resolves to array of active CheckIn records
+ * @returns Each CheckIn includes: childId, familyId, room, checkInTime, PIN
+ *
+ * @throws {Error} If API request fails (500 Internal Server Error)
+ *
+ * @example
+ * ```typescript
+ * const activeCheckIns = await getActiveCheckIns();
+ *
+ * console.log(`${activeCheckIns.length} children currently checked in`);
+ *
+ * activeCheckIns.forEach(checkIn => {
+ *   console.log(`Child: ${checkIn.childId}`);
+ *   console.log(`Room: ${checkIn.room}`);
+ *   console.log(`PIN: ${checkIn.checkOutPin}`);
+ * });
+ * ```
+ */
+export async function getActiveCheckIns() {
+  const response = await fetch(`${API_BASE_URL}/checkin/active`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to get active check-ins: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.checkIns;
+}
+
+/**
+ * Checks out a child from childcare with PIN verification.
+ *
+ * Verifies the provided PIN matches the one generated at check-in,
+ * then marks the check-in as completed and records the checkout time.
+ * This is the secure release mechanism for child pickup.
+ *
+ * @param data - Checkout information
+ * @param data.checkInId - Unique check-in identifier to checkout
+ * @param data.pin - 4-digit PIN provided by parent (must match check-in PIN)
+ *
+ * @returns Promise that resolves to checkout confirmation
+ * @returns Returns { checkIn: CheckIn, message: string }
+ *
+ * @throws {Error} If PIN is incorrect (400 Bad Request)
+ * @throws {Error} If check-in not found (404 Not Found)
+ * @throws {Error} If child already checked out (400 Bad Request)
+ * @throws {Error} If API request fails (500 Internal Server Error)
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   const result = await checkOutChild({
+ *     checkInId: 'chk-1738425600000-abc123',
+ *     pin: '4289'
+ *   });
+ *
+ *   console.log(result.message); // "Child checked out successfully"
+ *   console.log(`Checked out at: ${result.checkIn.checkOutTime}`);
+ * } catch (error) {
+ *   console.error('Checkout failed:', error.message);
+ *   // Error might be: "Incorrect PIN" or "Child already checked out"
+ * }
+ * ```
+ */
+export async function checkOutChild(data: {
+  checkInId: string;
+  pin: string;
+}) {
+  const response = await fetch(`${API_BASE_URL}/checkout`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to check out child: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
