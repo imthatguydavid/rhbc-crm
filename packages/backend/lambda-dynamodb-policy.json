@@ -15,7 +15,9 @@
         "arn:aws:dynamodb:us-west-2:593793033432:table/rhbc-families",
         "arn:aws:dynamodb:us-west-2:593793033432:table/rhbc-families/index/*",
         "arn:aws:dynamodb:us-west-2:593793033432:table/rhbc-people",
-        "arn:aws:dynamodb:us-west-2:593793033432:table/rhbc-people/index/*"
+        "arn:aws:dynamodb:us-west-2:593793033432:table/rhbc-people/index/*",
+        "arn:aws:dynamodb:us-west-2:593793033432:table/rhbc-checkins",
+        "arn:aws:dynamodb:us-west-2:593793033432:table/rhbc-checkins/index/*"
       ]
     }
   ]
