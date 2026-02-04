@@ -152,6 +152,11 @@ export async function checkOutChild(
   checkInId: string,
   providedPin: string
 ): Promise<CheckIn> {
+  // Validate PIN format (4 digits)
+  if (!/^\d{4}$/.test(providedPin)) {
+    throw new Error('PIN must be 4 digits');
+  }
+
   try {
     // Get the check-in record (using GetItem is more efficient than Query)
     const getResult = await dynamoDb.send(
