@@ -1,6 +1,5 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import type { CheckIn } from '@rhbc-crm/shared';
-import { createCheckIn } from '../services/checkInService.js';
+import { checkInChild } from '../services/checkInService.js';
 import { created, badRequest, serverError } from '../utils/response.js';
 
 /**
@@ -34,36 +33,16 @@ export async function handler(
       return badRequest('Missing required fields: childId, familyId, room');
     }
 
-    // Generate check-in ID and PIN
-    const checkInId = `chk-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    const checkOutPin = Math.floor(1000 + Math.random() * 9000).toString(); // 4-digit PIN
-    const now = new Date().toISOString();
-
-    // Create check-in record
-    const checkIn: CheckIn = {
-      checkInId,
+    // Call service to handle business logic
+    const result = await checkInChild({
       childId: body.childId,
       familyId: body.familyId,
-      checkInTime: now,
-      checkOutTime: null,
-      checkOutPin,
-      checkOutMethod: null,
-      manualOverrideNotes: null,
       room: body.room,
-      status: 'active',
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    // Save to DynamoDB
-    await createCheckIn(checkIn);
-
-    console.log(`Checked in child ${body.childId} to ${body.room}, PIN: ${checkOutPin}`);
-
-    return created({
-      checkIn,
-      pin: checkOutPin, // Return PIN to show parent
     });
+
+    console.log(`Checked in child ${body.childId} to ${body.room}, PIN: ${result.pin}`);
+
+    return created(result);
   } catch (error) {
     console.error('Error in checkInChild handler:', error);
 
