@@ -10,10 +10,10 @@
   ],
   "packageManager": "yarn@4.12.0",
   "scripts": {
-    "frontend": "yarn workspaces @rhbc-crm/frontend dev",
+    "frontend": "yarn workspace @rhbc-crm/frontend dev",
     "install:all": "yarn install",
     "clean": "rm -rf node_modules packages/*/node_modules",
-    "backend": "yarn workspaces @rhbc-crm/backend dev",
+    "backend": "yarn workspace @rhbc-crm/backend dev",
     "backend:deploy": "yarn workspace @rhbc-crm/backend deploy",
     "backend:deploy:prod": "yarn workspace @rhbc-crm/backend deploy:prod",
     "backend:offline": "yarn workspace @rhbc-crm/backend offline",
