@@ -16,17 +16,22 @@ const client = new DynamoDBClient({
 export const dynamoDb = DynamoDBDocumentClient.from(client, {
   marshallOptions: {
     removeUndefinedValues: true, // Remove undefined values
-    convertEmptyValues: false,   // Don't convert empty strings to null
+    convertEmptyValues: false, // Don't convert empty strings to null
   },
 });
+
+/**
+ * Get stage from environment variable (set by Serverless Framework)
+ */
+const stage = process.env.STAGE || 'dev';
 
 /**
  * Table names from environment variables
  */
 export const Tables = {
-  FAMILIES: process.env.FAMILIES_TABLE || 'rhbc-families',
-  PEOPLE: process.env.PEOPLE_TABLE || 'rhbc-people',
-  CHECKINS: process.env.CHECKINS_TABLE || 'rhbc-checkins',
-  EVENTS: process.env.EVENTS_TABLE || 'rhbc-events',
-  EVENT_REGISTRATIONS: process.env.EVENT_REGISTRATIONS_TABLE || 'rhbc-event-registrations',
+  FAMILIES: process.env.FAMILIES_TABLE || `rhbc-families-${stage}`,
+  PEOPLE: process.env.PEOPLE_TABLE || `rhbc-people-${stage}`,
+  CHECKINS: process.env.CHECKINS_TABLE || `rhbc-checkins-${stage}`,
+  EVENTS: process.env.EVENTS_TABLE || `rhbc-events-${stage}`,
+  EVENT_REGISTRATIONS: process.env.EVENT_REGISTRATIONS_TABLE || `rhbc-event-registrations-${stage}`,
 };

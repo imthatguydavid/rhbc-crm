@@ -1,6 +1,6 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { checkOutChild } from '../services/checkInService.js';
-import { success, badRequest, notFound, serverError } from '../utils/response.js';
+import { success, badRequest, notFound, serverError } from '../../shared/response.js';
 
 /**
  * Request body for checking out a child
@@ -21,9 +21,7 @@ interface CheckOutChildRequest {
  *   "pin": "5847"
  * }
  */
-export async function handler(
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> {
+export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   console.log('POST /checkout - Event:', JSON.stringify(event, null, 2));
 
   try {
@@ -59,7 +57,8 @@ export async function handler(
       if (error.message === 'Invalid PIN') {
         return badRequest('Incorrect PIN');
       }
-      if (error.message === 'PIN must be 4 digits') {  // ← ADD THIS
+      if (error.message === 'PIN must be 4 digits') {
+        // ← ADD THIS
         return badRequest('PIN must be 4 digits');
       }
       if (error.message === 'Child already checked out') {

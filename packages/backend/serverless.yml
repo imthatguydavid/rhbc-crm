@@ -1,0 +1,168 @@
+service: rhbc-crm-backend
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  stage: ${opt:stage, 'dev'}
+  region: us-west-2
+
+  environment:
+    STAGE: ${self:provider.stage}
+    CHECKINS_TABLE: rhbc-checkins-${self:provider.stage}
+    FAMILIES_TABLE: rhbc-families-${self:provider.stage}
+    PEOPLE_TABLE: rhbc-people-${self:provider.stage}
+
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource:
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.CHECKINS_TABLE}*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.FAMILIES_TABLE}*
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.PEOPLE_TABLE}*
+
+functions:
+  # ===== Check-in Service =====
+  checkInChild:
+    handler: src/checkin/handlers/checkInChild.handler
+    events:
+      - http:
+          path: /checkin
+          method: post
+          cors: true
+
+  checkOutChild:
+    handler: src/checkin/handlers/checkOutChild.handler
+    events:
+      - http:
+          path: /checkout
+          method: post
+          cors: true
+
+  getActiveCheckIns:
+    handler: src/checkin/handlers/getActiveCheckIns.handler
+    events:
+      - http:
+          path: /checkin/active
+          method: get
+          cors: true
+
+  # ===== Family Service =====
+  createFamily:
+    handler: src/family/handlers/createFamily.handler
+    events:
+      - http:
+          path: /families
+          method: post
+          cors: true
+
+  getFamily:
+    handler: src/family/handlers/getFamily.handler
+    events:
+      - http:
+          path: /families/{id}
+          method: get
+          cors: true
+
+  getFamilies:
+    handler: src/family/handlers/getFamilies.handler
+    events:
+      - http:
+          path: /families
+          method: get
+          cors: true
+
+resources:
+  Resources:
+    # ===== Check-ins Table =====
+    CheckInsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.CHECKINS_TABLE}
+        AttributeDefinitions:
+          - AttributeName: checkInId
+            AttributeType: S
+          - AttributeName: status
+            AttributeType: S
+          - AttributeName: checkInTime
+            AttributeType: S
+        KeySchema:
+          - AttributeName: checkInId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: status-checkInTime-index
+            KeySchema:
+              - AttributeName: status
+                KeyType: HASH
+              - AttributeName: checkInTime
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+        BillingMode: PAY_PER_REQUEST
+
+    # ===== Families Table =====
+    FamiliesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.FAMILIES_TABLE}
+        AttributeDefinitions:
+          - AttributeName: familyId
+            AttributeType: S
+          - AttributeName: pk
+            AttributeType: S
+          - AttributeName: createdAt
+            AttributeType: S
+        KeySchema:
+          - AttributeName: familyId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: pk-createdAt-index
+            KeySchema:
+              - AttributeName: pk
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+        BillingMode: PAY_PER_REQUEST
+
+    # ===== People Table =====
+    PeopleTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.PEOPLE_TABLE}
+        AttributeDefinitions:
+          - AttributeName: personId
+            AttributeType: S
+          - AttributeName: familyId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: personId
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: familyId-index
+            KeySchema:
+              - AttributeName: familyId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+        BillingMode: PAY_PER_REQUEST
+
+plugins:
+  - serverless-offline
+
+build:
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    target: node20
+    exclude:
+      - 'aws-sdk'

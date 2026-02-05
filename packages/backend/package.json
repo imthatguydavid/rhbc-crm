@@ -5,11 +5,21 @@
   "type": "module",
   "description": "AWS Lambda backend for RHBC CRM",
   "scripts": {
-    "build": "tsc",
-    "type-check": "tsc --noEmit",
-    "test": "NODE_OPTIONS='--experimental-vm-modules' yarn jest",
-    "test:watch": "NODE_OPTIONS='--experimental-vm-modules' yarn jest --watch",
-    "test:coverage": "NODE_OPTIONS='--experimental-vm-modules' yarn jest --coverage"
+    "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
+    "test:watch": "NODE_OPTIONS='--experimental-vm-modules' jest --watch",
+    "test:coverage": "NODE_OPTIONS='--experimental-vm-modules' jest --coverage",
+
+    "deploy": "serverless deploy --stage dev",
+    "deploy:prod": "serverless deploy --stage prod",
+    "deploy:info": "serverless info --stage dev",
+    "deploy:remove": "serverless remove --stage dev",
+
+    "offline": "serverless offline start",
+    "offline:prod": "serverless offline start --stage prod",
+
+    "logs:checkIn": "serverless logs --function checkInChild --stage dev --tail",
+    "logs:checkOut": "serverless logs --function checkOutChild --stage dev --tail",
+    "logs:families": "serverless logs --function getFamilies --stage dev --tail"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.709.0",
@@ -22,8 +32,11 @@
     "@types/jest": "^29.5.0",
     "@types/node": "^22.10.5",
     "aws-sdk-client-mock": "^4.1.0",
+    "esbuild": "^0.27.2",
     "jest": "^29.7.0",
     "jest-util": "^29.7.0",
+    "serverless": "^4.31.2",
+    "serverless-offline": "^14.4.0",
     "ts-jest": "^29.1.0",
     "typescript": "^5.9.3"
   }

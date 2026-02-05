@@ -1,6 +1,6 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { getActiveCheckIns } from '../services/checkInService.js';
-import { success, serverError } from '../utils/response.js';
+import { success, serverError } from '../../shared/response.js';
 
 /**
  * Lambda handler for GET /checkin/active
@@ -29,9 +29,7 @@ import { success, serverError } from '../utils/response.js';
  *   "count": 1
  * }
  */
-export async function handler(
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> {
+export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   console.log('GET /checkin/active - Event:', JSON.stringify(event, null, 2));
 
   try {

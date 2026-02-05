@@ -7,7 +7,7 @@ import {
   GetCommand,
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
-import { checkInChild, checkOutChild, getActiveCheckIns } from './checkInService.js';
+import { checkInChild, checkOutChild, getActiveCheckIns } from '../services/checkInService.js';
 
 // Create a mock DynamoDB client
 const ddbMock = mockClient(DynamoDBDocumentClient);

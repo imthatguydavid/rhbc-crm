@@ -1,14 +1,12 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { getFamilyById, getPeopleByFamily } from '../services/familyService.js';
-import { success, badRequest, notFound, serverError } from '../utils/response.js';
+import { success, badRequest, notFound, serverError } from '../../shared/response.js';
 
 /**
  * Lambda handler for GET /families/{id}
  * Returns a single family with all members
  */
-export async function handler(
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> {
+export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   console.log('GET /families/{id} - Event:', JSON.stringify(event, null, 2));
 
   try {

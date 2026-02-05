@@ -1,6 +1,6 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { checkInChild } from '../services/checkInService.js';
-import { created, badRequest, serverError } from '../utils/response.js';
+import { created, badRequest, serverError } from '../../shared/response';
 
 /**
  * Request body for checking in a child
@@ -15,9 +15,7 @@ interface CheckInChildRequest {
  * Lambda handler for POST /checkin
  * Checks in a child and generates a unique PIN for checkout
  */
-export async function handler(
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> {
+export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   console.log('POST /checkin - Event:', JSON.stringify(event, null, 2));
 
   try {

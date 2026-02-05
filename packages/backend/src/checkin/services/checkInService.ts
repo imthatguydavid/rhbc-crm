@@ -1,6 +1,6 @@
 import { PutCommand, GetCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import type { CheckIn } from '@rhbc-crm/shared';
-import { dynamoDb, Tables } from '../utils/dynamodb.js';
+import { dynamoDb, Tables } from '../../shared/dynamodb.js';
 
 /**
  * Generates a random 6-character alphanumeric string for IDs
@@ -46,7 +46,6 @@ export async function checkInChild(data: {
   familyId: string;
   room: string;
 }): Promise<{ checkIn: CheckIn; pin: string }> {
-
   // NEW: Check for existing active check-in
   const existingCheckIns = await dynamoDb.send(
     new QueryCommand({
@@ -129,12 +128,12 @@ export async function getActiveCheckIns(): Promise<CheckIn[]> {
         IndexName: 'status-checkInTime-index',
         KeyConditionExpression: '#status = :status',
         ExpressionAttributeNames: {
-          '#status': 'status',  // status is a reserved word in DynamoDB
+          '#status': 'status', // status is a reserved word in DynamoDB
         },
         ExpressionAttributeValues: {
           ':status': 'active',
         },
-        ScanIndexForward: false,  // Sort by checkInTime descending (newest first)
+        ScanIndexForward: false, // Sort by checkInTime descending (newest first)
       })
     );
 
@@ -148,10 +147,7 @@ export async function getActiveCheckIns(): Promise<CheckIn[]> {
 /**
  * Checks out a child with PIN verification
  */
-export async function checkOutChild(
-  checkInId: string,
-  providedPin: string
-): Promise<CheckIn> {
+export async function checkOutChild(checkInId: string, providedPin: string): Promise<CheckIn> {
   // Validate PIN format (4 digits)
   if (!/^\d{4}$/.test(providedPin)) {
     throw new Error('PIN must be 4 digits');
@@ -188,7 +184,8 @@ export async function checkOutChild(
       new UpdateCommand({
         TableName: Tables.CHECKINS,
         Key: { checkInId },
-        UpdateExpression: 'SET checkOutTime = :checkOutTime, checkOutMethod = :method, #status = :status, updatedAt = :updatedAt',
+        UpdateExpression:
+          'SET checkOutTime = :checkOutTime, checkOutMethod = :method, #status = :status, updatedAt = :updatedAt',
         ExpressionAttributeNames: {
           '#status': 'status',
         },

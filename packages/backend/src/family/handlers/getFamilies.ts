@@ -1,14 +1,12 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { getAllFamilies } from '../services/familyService.js';
-import { success, serverError } from '../utils/response.js';
+import { success, serverError } from '../../shared/response.js';
 
 /**
  * Lambda handler for GET /families
  * Returns all families in the system
  */
-export async function handler(
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> {
+export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   console.log('GET /families - Event:', JSON.stringify(event, null, 2));
 
   try {

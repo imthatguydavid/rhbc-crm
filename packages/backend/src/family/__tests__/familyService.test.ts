@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import { mockClient } from 'aws-sdk-client-mock';
 import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
-import { createFamilyWithParent } from './familyService.js';
+import { createFamilyWithParent } from '../services/familyService.js';
 
 const ddbMock = mockClient(DynamoDBDocumentClient);
 

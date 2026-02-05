@@ -1,5 +1,5 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { created, badRequest, serverError } from '../utils/response.js';
+import { created, badRequest, serverError } from '../../shared/response.js';
 import { createFamilyWithParent } from '../services/familyService.js';
 
 /**
@@ -17,9 +17,7 @@ interface CreateFamilyRequest {
  * Lambda handler for POST /families
  * Creates a new family with primary contact parent
  */
-export async function handler(
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> {
+export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   console.log('POST /families - Event:', JSON.stringify(event, null, 2));
 
   try {
@@ -62,7 +60,6 @@ export async function handler(
     console.log(`Created family ${result.family.familyId} with parent ${result.parent.personId}`);
 
     return created(result);
-
   } catch (error) {
     console.error('Error in createFamily handler:', error);
 

@@ -1,6 +1,6 @@
 import { PutCommand, QueryCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
 import type { Family, Person } from '@rhbc-crm/shared';
-import { dynamoDb, Tables } from '../utils/dynamodb.js';
+import { dynamoDb, Tables } from '../../shared/dynamodb.js';
 
 /**
  * Generates a unique family ID with timestamp
