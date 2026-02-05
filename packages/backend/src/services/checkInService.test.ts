@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import { mockClient } from 'aws-sdk-client-mock';
-import { DynamoDBDocumentClient, PutCommand, QueryCommand, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import { checkInChild, checkOutChild } from './checkInService.js';
+import {
+  DynamoDBDocumentClient,
+  PutCommand,
+  QueryCommand,
+  GetCommand,
+  UpdateCommand,
+} from '@aws-sdk/lib-dynamodb';
+import { checkInChild, checkOutChild, getActiveCheckIns } from './checkInService.js';
 
 // Create a mock DynamoDB client
 const ddbMock = mockClient(DynamoDBDocumentClient);
@@ -22,7 +28,7 @@ describe('checkInService', () => {
       const result = await checkInChild({
         childId: 'per-test-123',
         familyId: 'fam-test-456',
-        room: 'Nursery'
+        room: 'Nursery',
       });
 
       // Assert: Check the PIN format
@@ -41,7 +47,7 @@ describe('checkInService', () => {
       const result = await checkInChild({
         childId: 'per-test-123',
         familyId: 'fam-test-456',
-        room: 'Nursery'
+        room: 'Nursery',
       });
 
       // Assert
@@ -57,7 +63,7 @@ describe('checkInService', () => {
       const result = await checkInChild({
         childId: 'per-test-123',
         familyId: 'fam-test-456',
-        room: 'Nursery'
+        room: 'Nursery',
       });
 
       // Assert
@@ -74,7 +80,7 @@ describe('checkInService', () => {
       const result = await checkInChild({
         childId: 'per-test-123',
         familyId: 'fam-test-456',
-        room: 'Nursery'
+        room: 'Nursery',
       });
 
       // Assert
@@ -90,7 +96,7 @@ describe('checkInService', () => {
       const result = await checkInChild({
         childId: 'per-test-123',
         familyId: 'fam-test-456',
-        room: 'Nursery'
+        room: 'Nursery',
       });
 
       // Assert
@@ -101,13 +107,18 @@ describe('checkInService', () => {
       // Arrange: Set up mock to return different responses for each call
       ddbMock
         .on(QueryCommand)
-        .resolvesOnce({ Items: [] })        // 1st call: no duplicates
-        .resolvesOnce({ Items: [{           // 2nd call: duplicate exists!
-            checkInId: 'chk-existing',
-            childId: 'per-test-123',
-            status: 'active',
-            checkInTime: '2026-02-04T10:00:00Z'
-          }] });
+        .resolvesOnce({ Items: [] }) // 1st call: no duplicates
+        .resolvesOnce({
+          Items: [
+            {
+              // 2nd call: duplicate exists!
+              checkInId: 'chk-existing',
+              childId: 'per-test-123',
+              status: 'active',
+              checkInTime: '2026-02-04T10:00:00Z',
+            },
+          ],
+        });
 
       ddbMock.on(PutCommand).resolves({}); // PutCommand can use .resolves() (not Once)
 
@@ -115,7 +126,7 @@ describe('checkInService', () => {
       await checkInChild({
         childId: 'per-test-123',
         familyId: 'fam-test-456',
-        room: 'Nursery'
+        room: 'Nursery',
       });
 
       // Assert: Second check-in should fail
@@ -123,7 +134,7 @@ describe('checkInService', () => {
         checkInChild({
           childId: 'per-test-123',
           familyId: 'fam-test-456',
-          room: 'Nursery'
+          room: 'Nursery',
         })
       ).rejects.toThrow('Child is already checked in');
     });
@@ -146,7 +157,7 @@ describe('checkInService', () => {
           room: 'Nursery',
           createdAt: '2026-02-04T10:00:00Z',
           updatedAt: '2026-02-04T10:00:00Z',
-        }
+        },
       });
 
       ddbMock.on(UpdateCommand).resolves({});
@@ -167,14 +178,14 @@ describe('checkInService', () => {
       ddbMock.on(GetCommand).resolves({
         Item: {
           checkInId: 'chk-test-123',
-          checkOutPin: '1234',  // Correct PIN is 1234
+          checkOutPin: '1234', // Correct PIN is 1234
           status: 'active',
-        }
+        },
       });
 
       // Act & Assert: Wrong PIN should throw error
       await expect(
-        checkOutChild('chk-test-123', '9999')  // ← Wrong PIN!
+        checkOutChild('chk-test-123', '9999') // ← Wrong PIN!
       ).rejects.toThrow('Invalid PIN');
 
       // Verify UpdateCommand was NOT called (no checkout happened)
@@ -189,20 +200,20 @@ describe('checkInService', () => {
           childId: 'per-test-123',
           familyId: 'fam-test-456',
           checkInTime: '2026-02-04T10:00:00Z',
-          checkOutTime: '2026-02-04T11:00:00Z',  // Already checked out!
+          checkOutTime: '2026-02-04T11:00:00Z', // Already checked out!
           checkOutPin: '1234',
           checkOutMethod: 'pin',
           manualOverrideNotes: null,
-          status: 'completed',  // ← Key field: already completed
+          status: 'completed', // ← Key field: already completed
           room: 'Nursery',
           createdAt: '2026-02-04T10:00:00Z',
           updatedAt: '2026-02-04T11:00:00Z',
-        }
+        },
       });
 
       // Act & Assert: Should reject even with correct PIN
       await expect(
-        checkOutChild('chk-test-123', '1234')  // Correct PIN doesn't matter!
+        checkOutChild('chk-test-123', '1234') // Correct PIN doesn't matter!
       ).rejects.toThrow('Child already checked out');
 
       // Verify UpdateCommand was NOT called (no second checkout)
@@ -216,9 +227,67 @@ describe('checkInService', () => {
       });
 
       // Act & Assert: Should throw error
-      await expect(
-        checkOutChild('chk-nonexistent', '1234')
-      ).rejects.toThrow('Check-in not found');
+      await expect(checkOutChild('chk-nonexistent', '1234')).rejects.toThrow('Check-in not found');
+    });
+  });
+
+  describe('getActiveCheckIns', () => {
+    it('should return empty array when no active check-ins', async () => {
+      // Arrange: Mock empty result
+      ddbMock.on(QueryCommand).resolves({
+        Items: [],
+      });
+
+      // Act
+      const result = await getActiveCheckIns();
+
+      // Assert
+      expect(result).toEqual([]);
+      expect(result.length).toBe(0);
+    });
+
+    it('should return active check-ins', async () => {
+      // Arrange: Mock active check-ins
+      ddbMock.on(QueryCommand).resolves({
+        Items: [
+          {
+            checkInId: 'chk-1',
+            childId: 'per-123',
+            familyId: 'fam-456',
+            status: 'active',
+            checkInTime: '2026-02-04T10:00:00Z',
+            checkOutTime: null,
+            room: 'Nursery',
+          },
+          {
+            checkInId: 'chk-2',
+            childId: 'per-789',
+            familyId: 'fam-012',
+            status: 'active',
+            checkInTime: '2026-02-04T10:30:00Z',
+            checkOutTime: null,
+            room: 'Toddler Room',
+          },
+        ],
+      });
+
+      // Act
+      const result = await getActiveCheckIns();
+
+      // Assert
+      expect(result.length).toBe(2);
+      expect(result[0].status).toBe('active');
+      expect(result[1].status).toBe('active');
+      expect(result[0].checkOutTime).toBeNull();
+      expect(result[1].checkOutTime).toBeNull();
+    });
+
+    it('should handle query errors gracefully', async () => {
+      // Arrange: Mock DynamoDB error
+      ddbMock.on(QueryCommand).rejects(new Error('DynamoDB unavailable'));
+
+      // Act & Assert
+      await expect(getActiveCheckIns()).rejects.toThrow('Failed to retrieve active check-ins');
     });
   });
 });

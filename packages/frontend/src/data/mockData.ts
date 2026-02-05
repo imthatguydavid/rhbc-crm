@@ -188,6 +188,7 @@ export const mockCheckIns: CheckIn[] = [
     room: 'Nursery A',
     createdAt: '2025-02-02T09:15:00Z',
     updatedAt: '2025-02-02T09:15:00Z',
+    status: 'active',
   },
   {
     checkInId: 'chk-002',
@@ -201,6 +202,7 @@ export const mockCheckIns: CheckIn[] = [
     room: 'Toddler Room',
     createdAt: '2025-02-02T09:15:00Z',
     updatedAt: '2025-02-02T09:15:00Z',
+    status: 'active',
   },
   {
     checkInId: 'chk-003',
@@ -214,6 +216,7 @@ export const mockCheckIns: CheckIn[] = [
     room: 'Preschool',
     createdAt: '2025-02-02T09:30:00Z',
     updatedAt: '2025-02-02T11:45:00Z',
+    status: 'active',
   },
 ];
 
@@ -221,32 +224,28 @@ export const mockCheckIns: CheckIn[] = [
  * Helper function to get people by family
  */
 export function getPeopleByFamily(familyId: string): Person[] {
-  return mockPeople.filter(person => person.familyId === familyId);
+  return mockPeople.filter((person) => person.familyId === familyId);
 }
 
 /**
  * Helper function to get children by family
  */
 export function getChildrenByFamily(familyId: string): Person[] {
-  return mockPeople.filter(
-    person => person.familyId === familyId && person.role === 'child'
-  );
+  return mockPeople.filter((person) => person.familyId === familyId && person.role === 'child');
 }
 
 /**
  * Helper function to get parents by family
  */
 export function getParentsByFamily(familyId: string): Person[] {
-  return mockPeople.filter(
-    person => person.familyId === familyId && person.role === 'parent'
-  );
+  return mockPeople.filter((person) => person.familyId === familyId && person.role === 'parent');
 }
 
 /**
  * Helper function to get active check-ins (not checked out)
  */
 export function getActiveCheckIns(): CheckIn[] {
-  return mockCheckIns.filter(checkIn => checkIn.checkOutTime === null);
+  return mockCheckIns.filter((checkIn) => checkIn.checkOutTime === null);
 }
 
 /**
