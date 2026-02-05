@@ -1,7 +1,6 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import type { Family, Person } from '@rhbc-crm/shared';
-import { createFamily, createPerson } from '../services/familyService.js';
 import { created, badRequest, serverError } from '../utils/response.js';
+import { createFamilyWithParent } from '../services/familyService.js';
 
 /**
  * Request body structure for creating a family
@@ -51,43 +50,19 @@ export async function handler(
       return badRequest('Invalid email format');
     }
 
-    // Generate IDs
-    const familyId = `fam-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    const personId = `per-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    const now = new Date().toISOString();
-
-    // Create family
-    const family: Family = {
-      familyId,
-      pk: 'FAMILY',
+    // Call service to handle business logic
+    const result = await createFamilyWithParent({
       lastName: body.lastName,
       status: body.status,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    // Create parent person
-    const parent: Person = {
-      personId,
-      familyId,
-      firstName: body.parentFirstName,
-      phone: body.parentPhone,
-      email: body.parentEmail,
-      role: 'parent',
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    // Save to DynamoDB
-    await createFamily(family);
-    await createPerson(parent);
-
-    console.log(`Created family ${familyId} with parent ${personId}`);
-
-    return created({
-      family,
-      parent,
+      parentFirstName: body.parentFirstName,
+      parentPhone: body.parentPhone,
+      parentEmail: body.parentEmail,
     });
+
+    console.log(`Created family ${result.family.familyId} with parent ${result.parent.personId}`);
+
+    return created(result);
+
   } catch (error) {
     console.error('Error in createFamily handler:', error);
 

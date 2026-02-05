@@ -3,6 +3,98 @@ import type { CheckIn } from '@rhbc-crm/shared';
 import { dynamoDb, Tables } from '../utils/dynamodb.js';
 
 /**
+ * Generates a random 6-character alphanumeric string for IDs
+ */
+function generateRandomId(): string {
+  return Math.random().toString(36).substring(2, 9);
+}
+
+/**
+ * Generates a secure 4-digit PIN for checkout
+ * Range: 1000-9999 (exactly 4 digits)
+ */
+function generatePin(): string {
+  return Math.floor(1000 + Math.random() * 9000).toString();
+}
+
+/**
+ * Checks in a child to childcare and generates secure PIN
+ *
+ * Creates a check-in record with automatically generated PIN
+ * that parents must provide at pickup.
+ *
+ * @param data - Check-in information
+ * @param data.childId - Unique child identifier from Person table
+ * @param data.familyId - Unique family identifier
+ * @param data.room - Childcare room assignment (e.g., "Nursery")
+ *
+ * @returns Promise that resolves to check-in record with PIN
+ *
+ * @example
+ * ```typescript
+ * const result = await checkInChild({
+ *   childId: 'per-123',
+ *   familyId: 'fam-456',
+ *   room: 'Nursery'
+ * });
+ * console.log(`PIN: ${result.pin}`);
+ * ```
+ */
+
+export async function checkInChild(data: {
+  childId: string;
+  familyId: string;
+  room: string;
+}): Promise<{ checkIn: CheckIn; pin: string }> {
+
+  // NEW: Check for existing active check-in
+  const existingCheckIns = await dynamoDb.send(
+    new QueryCommand({
+      TableName: Tables.CHECKINS,
+      IndexName: 'status-checkInTime-index',
+      KeyConditionExpression: '#status = :status',
+      FilterExpression: 'childId = :childId',
+      ExpressionAttributeNames: {
+        '#status': 'status',
+      },
+      ExpressionAttributeValues: {
+        ':status': 'active',
+        ':childId': data.childId,
+      },
+      Limit: 1, // We only need to know if one exists
+    })
+  );
+
+  if (existingCheckIns.Items && existingCheckIns.Items.length > 0) {
+    throw new Error('Child is already checked in');
+  }
+
+  // Rest of the existing code...
+  const checkInId = `chk-${Date.now()}-${generateRandomId()}`;
+  const pin = generatePin();
+  const now = new Date().toISOString();
+
+  const checkIn: CheckIn = {
+    checkInId,
+    childId: data.childId,
+    familyId: data.familyId,
+    checkInTime: now,
+    checkOutTime: null,
+    checkOutPin: pin,
+    checkOutMethod: null,
+    manualOverrideNotes: null,
+    status: 'active',
+    room: data.room,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await createCheckIn(checkIn);
+
+  return { checkIn, pin };
+}
+
+/**
  * Creates a new check-in record
  */
 export async function createCheckIn(checkIn: CheckIn): Promise<CheckIn> {
@@ -60,6 +152,11 @@ export async function checkOutChild(
   checkInId: string,
   providedPin: string
 ): Promise<CheckIn> {
+  // Validate PIN format (4 digits)
+  if (!/^\d{4}$/.test(providedPin)) {
+    throw new Error('PIN must be 4 digits');
+  }
+
   try {
     // Get the check-in record (using GetItem is more efficient than Query)
     const getResult = await dynamoDb.send(

@@ -65,7 +65,7 @@ export function CheckInPage() {
       const result = await checkInChild({
         childId: selectedChildId,
         familyId: selectedFamilyId,
-        room: room.trim(),
+        room: 'Nursery'
       });
 
       // Show success with PIN

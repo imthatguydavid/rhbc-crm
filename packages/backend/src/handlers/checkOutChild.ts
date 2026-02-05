@@ -39,11 +39,6 @@ export async function handler(
       return badRequest('Missing required fields: checkInId, pin');
     }
 
-    // Validate PIN format (4 digits)
-    if (!/^\d{4}$/.test(body.pin)) {
-      return badRequest('PIN must be 4 digits');
-    }
-
     // Check out child with PIN verification
     const checkIn = await checkOutChild(body.checkInId, body.pin);
 
@@ -63,6 +58,9 @@ export async function handler(
       }
       if (error.message === 'Invalid PIN') {
         return badRequest('Incorrect PIN');
+      }
+      if (error.message === 'PIN must be 4 digits') {  // ← ADD THIS
+        return badRequest('PIN must be 4 digits');
       }
       if (error.message === 'Child already checked out') {
         return badRequest('Child has already been checked out');
