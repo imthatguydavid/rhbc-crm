@@ -5,13 +5,7 @@
  * Base URL points to AWS API Gateway which routes to Lambda functions.
  */
 
-/**
- * Base URL for the RHBC CRM API.
- * Points to AWS API Gateway dev stage.
- *
- * @constant
- */
-const API_BASE_URL = 'https://xvq0jeloif.execute-api.us-west-2.amazonaws.com/dev';
+import { getApiUrl, API_ENDPOINTS, API_CONFIG } from '@/config/api';
 
 /**
  * Retrieves all families from the database.
@@ -29,7 +23,9 @@ const API_BASE_URL = 'https://xvq0jeloif.execute-api.us-west-2.amazonaws.com/dev
  * ```
  */
 export async function getFamilies() {
-  const response = await fetch(`${API_BASE_URL}/families`);
+  const response = await fetch(getApiUrl(API_ENDPOINTS.GET_FAMILIES), {
+    ...API_CONFIG,
+  });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch families: ${response.statusText}`);
@@ -81,11 +77,9 @@ export async function createFamily(familyData: {
   parentPhone: string;
   parentEmail?: string;
 }) {
-  const response = await fetch(`${API_BASE_URL}/families`, {
+  const response = await fetch(getApiUrl(API_ENDPOINTS.CREATE_FAMILY), {
+    ...API_CONFIG,
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify(familyData),
   });
 
@@ -125,7 +119,9 @@ export async function createFamily(familyData: {
  * ```
  */
 export async function getFamilyById(familyId: string) {
-  const response = await fetch(`${API_BASE_URL}/families/${familyId}`);
+  const response = await fetch(getApiUrl(API_ENDPOINTS.GET_FAMILY(familyId)), {
+    ...API_CONFIG,
+  });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch family: ${response.statusText}`);
@@ -167,16 +163,10 @@ export async function getFamilyById(familyId: string) {
  * // Display PIN prominently: result.pin is a 4-digit string like "4289"
  * ```
  */
-export async function checkInChild(data: {
-  childId: string;
-  familyId: string;
-  room: string;
-}) {
-  const response = await fetch(`${API_BASE_URL}/checkin`, {
+export async function checkInChild(data: { childId: string; familyId: string; room: string }) {
+  const response = await fetch(getApiUrl(API_ENDPOINTS.CHECKIN), {
+    ...API_CONFIG,
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify(data),
   });
 
@@ -215,7 +205,9 @@ export async function checkInChild(data: {
  * ```
  */
 export async function getActiveCheckIns() {
-  const response = await fetch(`${API_BASE_URL}/checkin/active`);
+  const response = await fetch(getApiUrl(API_ENDPOINTS.ACTIVE_CHECKINS), {
+    ...API_CONFIG,
+  });
 
   if (!response.ok) {
     throw new Error(`Failed to get active check-ins: ${response.statusText}`);
@@ -260,15 +252,10 @@ export async function getActiveCheckIns() {
  * }
  * ```
  */
-export async function checkOutChild(data: {
-  checkInId: string;
-  pin: string;
-}) {
-  const response = await fetch(`${API_BASE_URL}/checkout`, {
+export async function checkOutChild(data: { checkInId: string; pin: string }) {
+  const response = await fetch(getApiUrl(API_ENDPOINTS.CHECKOUT), {
+    ...API_CONFIG,
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify(data),
   });
 
