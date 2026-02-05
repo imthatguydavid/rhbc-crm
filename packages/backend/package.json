@@ -5,18 +5,15 @@
   "type": "module",
   "description": "AWS Lambda backend for RHBC CRM",
   "scripts": {
-    "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
-    "test:watch": "NODE_OPTIONS='--experimental-vm-modules' jest --watch",
-    "test:coverage": "NODE_OPTIONS='--experimental-vm-modules' jest --coverage",
-
+    "test": "NODE_OPTIONS='--experimental-vm-modules' yarn exec jest",
+    "test:watch": "NODE_OPTIONS='--experimental-vm-modules' yarn exec jest --watch",
+    "test:coverage": "NODE_OPTIONS='--experimental-vm-modules' yarn exec jest --coverage",
     "deploy": "serverless deploy --stage dev",
     "deploy:prod": "serverless deploy --stage prod",
     "deploy:info": "serverless info --stage dev",
     "deploy:remove": "serverless remove --stage dev",
-
     "offline": "serverless offline start",
     "offline:prod": "serverless offline start --stage prod",
-
     "logs:checkIn": "serverless logs --function checkInChild --stage dev --tail",
     "logs:checkOut": "serverless logs --function checkOutChild --stage dev --tail",
     "logs:families": "serverless logs --function getFamilies --stage dev --tail"
