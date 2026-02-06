@@ -104,19 +104,21 @@ export async function createFamilyWithParent(data: {
 
 /**
  * Gets all families with optional search and status filtering.
+ * Includes primary parent information for each family.
  *
  * Queries the pk-createdAt-index GSI for efficient retrieval.
+ * For each family, fetches the primary parent to display in search results.
  * Filters results based on provided search and status parameters.
  *
  * @param filters - Optional search filters
  * @param filters.search - Search term for lastName (case-insensitive partial match)
  * @param filters.status - Filter by family status (member or guest)
- * @returns Promise resolving to array of Family records
+ * @returns Promise resolving to array of Family records with primary parent info
  */
 export async function getAllFamilies(filters?: {
   search?: string;
   status?: 'member' | 'guest';
-}): Promise<Family[]> {
+}): Promise<Array<Family & { primaryParent?: Person }>> {
   // Build filter expression dynamically
   const filterExpressions: string[] = [];
   const expressionAttributeNames: Record<string, string> = {};
@@ -150,13 +152,31 @@ export async function getAllFamilies(filters?: {
   const result = await dynamoDb.send(new QueryCommand(queryParams));
   let families = (result.Items as Family[]) || [];
 
-  // Client-side search filter for lastName (DynamoDB doesn't support CONTAINS on non-key attributes in KeyCondition)
+  // Client-side search filter for lastName
   if (filters?.search) {
     const searchTerm = filters.search.toLowerCase();
     families = families.filter((family) => family.lastName.toLowerCase().includes(searchTerm));
   }
 
-  return families;
+  // Fetch primary parent for each family
+  const familiesWithParents = await Promise.all(
+    families.map(async (family) => {
+      try {
+        const people = await getPeopleByFamily(family.familyId);
+        const primaryParent = people.find((p) => p.role === 'parent');
+
+        return {
+          ...family,
+          primaryParent: primaryParent || undefined,
+        };
+      } catch (error) {
+        console.error(`Error fetching parent for family ${family.familyId}:`, error);
+        return { ...family, primaryParent: undefined };
+      }
+    })
+  );
+
+  return familiesWithParents;
 }
 
 /**

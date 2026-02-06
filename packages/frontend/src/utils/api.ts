@@ -404,3 +404,44 @@ export async function searchFamilies(filters?: { search?: string; status?: 'memb
   const data = await response.json();
   return data.families;
 }
+
+/**
+ * Bulk check-in multiple children with one PIN.
+ * Used for kiosk mode where parents check in multiple kids together.
+ */
+export async function bulkCheckInChildren(data: {
+  familyId: string;
+  childIds: string[];
+  room: string;
+}) {
+  const response = await fetch(getApiUrl('/checkin/bulk'), {
+    ...API_CONFIG,
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to bulk check-in: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
+
+/**
+ * Check out all children with a PIN.
+ * Used for kiosk mode where one PIN checks out multiple kids.
+ */
+export async function checkOutByPin(pin: string) {
+  const response = await fetch(getApiUrl('/checkout/pin'), {
+    ...API_CONFIG,
+    method: 'POST',
+    body: JSON.stringify({ pin }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || `Failed to check out: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
