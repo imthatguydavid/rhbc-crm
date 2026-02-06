@@ -1,7 +1,16 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import { mockClient } from 'aws-sdk-client-mock';
-import { DynamoDBDocumentClient, PutCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
-import { createFamilyWithParent, addChildToFamily } from '../services/familyService.js';
+import {
+  DynamoDBDocumentClient,
+  PutCommand,
+  GetCommand,
+  UpdateCommand,
+} from '@aws-sdk/lib-dynamodb';
+import {
+  createFamilyWithParent,
+  addChildToFamily,
+  updatePerson,
+} from '../services/familyService.js';
 
 const ddbMock = mockClient(DynamoDBDocumentClient);
 
@@ -154,6 +163,69 @@ describe('familyService', () => {
 
       expect(result.phone).toBe('5551234567');
       expect(result.email).toBe('emma@email.com');
+    });
+  });
+  describe('updatePerson', () => {
+    it('should update person firstName', async () => {
+      // Mock person exists
+      ddbMock.on(GetCommand).resolves({
+        Item: {
+          personId: 'per-123',
+          firstName: 'John',
+          phone: '5551234567',
+        },
+      });
+
+      // Mock update
+      ddbMock.on(UpdateCommand).resolves({
+        Attributes: {
+          personId: 'per-123',
+          firstName: 'Jane',
+          phone: '5551234567',
+          updatedAt: '2026-02-06T00:00:00.000Z',
+        },
+      });
+
+      const result = await updatePerson('per-123', {
+        firstName: 'Jane',
+      });
+
+      expect(result.firstName).toBe('Jane');
+      expect(result.phone).toBe('5551234567');
+    });
+
+    it('should update multiple fields', async () => {
+      ddbMock.on(GetCommand).resolves({
+        Item: { personId: 'per-123' },
+      });
+
+      ddbMock.on(UpdateCommand).resolves({
+        Attributes: {
+          personId: 'per-123',
+          firstName: 'Jane',
+          phone: '5559999999',
+          email: 'jane@email.com',
+          updatedAt: '2026-02-06T00:00:00.000Z',
+        },
+      });
+
+      const result = await updatePerson('per-123', {
+        firstName: 'Jane',
+        phone: '5559999999',
+        email: 'jane@email.com',
+      });
+
+      expect(result.firstName).toBe('Jane');
+      expect(result.phone).toBe('5559999999');
+      expect(result.email).toBe('jane@email.com');
+    });
+
+    it('should throw error if person not found', async () => {
+      ddbMock.on(GetCommand).resolves({});
+
+      await expect(updatePerson('per-nonexistent', { firstName: 'Jane' })).rejects.toThrow(
+        'Person not found'
+      );
     });
   });
 });

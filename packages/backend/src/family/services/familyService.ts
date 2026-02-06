@@ -1,4 +1,4 @@
-import { PutCommand, QueryCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
+import { PutCommand, QueryCommand, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import type { Family, Person } from '@rhbc-crm/shared';
 import { dynamoDb, Tables } from '../../shared/dynamodb.js';
 
@@ -21,6 +21,22 @@ function generatePersonId(): string {
  * Used for efficient querying via GSI
  */
 const FAMILY_PK = 'FAMILY';
+/**
+ * Gets a person by ID.
+ *
+ * @param personId - Person ID to retrieve
+ * @returns Promise resolving to Person or null if not found
+ */
+export async function getPersonById(personId: string): Promise<Person | null> {
+  const result = await dynamoDb.send(
+    new GetCommand({
+      TableName: Tables.PEOPLE,
+      Key: { personId },
+    })
+  );
+
+  return result.Item as Person | null;
+}
 
 /**
  * Creates a new family with a parent contact in one operation
@@ -275,4 +291,72 @@ export async function addChildToFamily(
   await createPerson(child);
 
   return child;
+}
+
+/**
+ * Updates a person's information.
+ *
+ * Only updates fields that are provided. All fields are optional.
+ *
+ * @param personId - Person ID to update
+ * @param updates - Fields to update
+ * @returns Promise resolving to updated Person record
+ * @throws Error if person doesn't exist
+ */
+export async function updatePerson(
+  personId: string,
+  updates: {
+    firstName?: string;
+    phone?: string;
+    email?: string;
+  }
+): Promise<Person> {
+  // 1. Get existing person
+  const existingPerson = await getPersonById(personId);
+  if (!existingPerson) {
+    throw new Error('Person not found');
+  }
+
+  // 2. Build update expression dynamically
+  const updateExpressions: string[] = [];
+  const expressionAttributeNames: Record<string, string> = {};
+  const expressionAttributeValues: Record<string, any> = {};
+
+  // Add fields that are being updated
+  if (updates.firstName !== undefined) {
+    updateExpressions.push('#firstName = :firstName');
+    expressionAttributeNames['#firstName'] = 'firstName';
+    expressionAttributeValues[':firstName'] = updates.firstName;
+  }
+
+  if (updates.phone !== undefined) {
+    updateExpressions.push('#phone = :phone');
+    expressionAttributeNames['#phone'] = 'phone';
+    expressionAttributeValues[':phone'] = updates.phone;
+  }
+
+  if (updates.email !== undefined) {
+    updateExpressions.push('#email = :email');
+    expressionAttributeNames['#email'] = 'email';
+    expressionAttributeValues[':email'] = updates.email;
+  }
+
+  // Always update updatedAt
+  updateExpressions.push('#updatedAt = :updatedAt');
+  expressionAttributeNames['#updatedAt'] = 'updatedAt';
+  expressionAttributeValues[':updatedAt'] = new Date().toISOString();
+
+  // 3. Update in database
+  const result = await dynamoDb.send(
+    new UpdateCommand({
+      TableName: Tables.PEOPLE,
+      Key: { personId },
+      UpdateExpression: `SET ${updateExpressions.join(', ')}`,
+      ExpressionAttributeNames: expressionAttributeNames,
+      ExpressionAttributeValues: expressionAttributeValues,
+      ReturnValues: 'ALL_NEW',
+    })
+  );
+
+  return result.Attributes as Person;
 }

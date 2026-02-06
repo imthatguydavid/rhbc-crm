@@ -71,6 +71,14 @@ functions:
           method: post
           cors: true
 
+  updatePerson:
+    handler: src/family/handlers/updatePerson.handler
+    events:
+      - http:
+          path: /people/{id}
+          method: put
+          cors: true
+
   getFamily:
     handler: src/family/handlers/getFamily.handler
     events:
