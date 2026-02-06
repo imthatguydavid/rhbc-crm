@@ -38,6 +38,24 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
+      - name: Build shared package
+        run: |
+          yarn workspace @rhbc-crm/shared clean
+          yarn workspace @rhbc-crm/shared build
+
+      # DEBUG: Show what was built
+      - name: Debug - List shared dist contents
+        run: |
+          echo "=== Contents of packages/shared/dist ==="
+          ls -la packages/shared/dist/
+          echo "=== Checking for index.d.ts ==="
+          if [ -f packages/shared/dist/index.d.ts ]; then
+            echo "✓ index.d.ts EXISTS"
+            head -20 packages/shared/dist/index.d.ts
+          else
+            echo "✗ index.d.ts MISSING"
+          fi
+
       - name: Run backend tests
         run: yarn workspace @rhbc-crm/backend test
 
@@ -75,42 +93,25 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
+      - name: Build shared package
+        run: |
+          yarn workspace @rhbc-crm/shared clean
+          yarn workspace @rhbc-crm/shared build
+
+      # DEBUG: Show what was built
+      - name: Debug - List shared dist contents
+        run: |
+          echo "=== Contents of packages/shared/dist ==="
+          ls -la packages/shared/dist/
+          echo "=== Checking for index.d.ts ==="
+          if [ -f packages/shared/dist/index.d.ts ]; then
+            echo "✓ index.d.ts EXISTS"
+          else
+            echo "✗ index.d.ts MISSING"
+          fi
+
       - name: Frontend type check
         run: yarn workspace @rhbc-crm/frontend type-check
 
       - name: Build frontend
         run: yarn workspace @rhbc-crm/frontend build
-
-  shared-checks:
-    name: Shared Package Type Check
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
-
-      - name: Cache yarn dependencies
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-
-      - name: Install dependencies
-        run: yarn install --immutable
-
-      - name: Build shared package
-        run: yarn workspace @rhbc-crm/shared build
