@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import type { Family } from '@rhbc-crm/shared';
 import {
   Table,
@@ -9,60 +8,35 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { getPeopleByFamily } from '@/data/mockData';
 
 interface FamilyListProps {
   families: Family[];
-  onViewDetails: (family: Family) => void;  // ← New prop
+  onViewDetails: (family: Family) => void;
 }
 
 export function FamilyList({ families, onViewDetails }: FamilyListProps) {
-  // Compute family stats
-  const familyStats = useMemo(() => {
-    return families.map(family => {
-      const people = getPeopleByFamily(family.familyId);
-      const parents = people.filter(p => p.role === 'parent');
-      const children = people.filter(p => p.role === 'child');
-
-      return {
-        ...family,
-        parentCount: parents.length,
-        childCount: children.length,
-      };
-    });
-  }, [families]);
-
   return (
     <div className="rounded-lg border bg-white shadow-sm">
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead className="w-[200px]">Family Name</TableHead>
-            <TableHead className="text-center">Parents</TableHead>
-            <TableHead className="text-center">Children</TableHead>
             <TableHead className="w-[100px]">Status</TableHead>
+            <TableHead>Created</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {familyStats.length === 0 ? (
+          {families.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground">
+              <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
                 No families found
               </TableCell>
             </TableRow>
           ) : (
-            familyStats.map(family => (
+            families.map((family) => (
               <TableRow key={family.familyId}>
-                <TableCell className="font-medium">
-                  {family.lastName} Family
-                </TableCell>
-                <TableCell className="text-center">
-                  {family.parentCount}
-                </TableCell>
-                <TableCell className="text-center">
-                  {family.childCount}
-                </TableCell>
+                <TableCell className="font-medium">{family.lastName} Family</TableCell>
                 <TableCell>
                   <span
                     className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
@@ -74,12 +48,11 @@ export function FamilyList({ families, onViewDetails }: FamilyListProps) {
                     {family.status}
                   </span>
                 </TableCell>
+                <TableCell className="text-sm text-slate-500">
+                  {new Date(family.createdAt).toLocaleDateString()}
+                </TableCell>
                 <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onViewDetails(family)}  // ← New click handler
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => onViewDetails(family)}>
                     View Details
                   </Button>
                 </TableCell>

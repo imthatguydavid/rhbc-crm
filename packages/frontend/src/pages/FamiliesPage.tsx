@@ -5,7 +5,24 @@ import { FamilyDetails } from '@/components/FamilyDetails';
 import { AddFamilyDialog } from '@/components/AddFamilyDialog';
 import { StatsCard } from '@/components/StatsCard';
 import { Button } from '@/components/ui/button';
-import { getFamilies, createFamily, getFamilyById } from '@/utils/api';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Search } from 'lucide-react';
+import {
+  searchFamilies,
+  createFamily,
+  getFamilyById,
+  updateFamily,
+  updatePerson,
+  addChildToFamily,
+  deletePerson,
+} from '@/utils/api';
 
 export function FamiliesPage() {
   const [families, setFamilies] = useState<Family[]>([]);
@@ -16,19 +33,30 @@ export function FamiliesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load families on mount
+  // Search/filter state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'member' | 'guest'>('all');
+
+  // Load families on mount and when filters change
   useEffect(() => {
     loadFamilies();
-  }, []);
+  }, [searchTerm, statusFilter]);
 
   /**
-   * Loads all families from the API
+   * Loads families with current search/filter settings
    */
   async function loadFamilies() {
     try {
       setIsLoading(true);
       setError(null);
-      const familiesData = await getFamilies();
+
+      const filters: any = {};
+      if (searchTerm) filters.search = searchTerm;
+      if (statusFilter !== 'all') filters.status = statusFilter;
+
+      const familiesData = await searchFamilies(
+        Object.keys(filters).length > 0 ? filters : undefined
+      );
       setFamilies(familiesData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load families');
@@ -39,9 +67,8 @@ export function FamiliesPage() {
   }
 
   // Calculate stats
-  const memberFamilies = families.filter(f => f.status === 'member');
-  const guestFamilies = families.filter(f => f.status === 'guest');
-  const children = people.filter(p => p.role === 'child');
+  const memberFamilies = families.filter((f) => f.status === 'member');
+  const guestFamilies = families.filter((f) => f.status === 'guest');
 
   /**
    * Handles viewing a family's details
@@ -94,7 +121,92 @@ export function FamiliesPage() {
     }
   }
 
-  if (isLoading) {
+  /**
+   * Handles updating a family
+   */
+  async function handleUpdateFamily(
+    familyId: string,
+    updates: { lastName: string; status: 'member' | 'guest' }
+  ) {
+    try {
+      setError(null);
+      await updateFamily(familyId, updates);
+
+      // Reload families and refresh details
+      await loadFamilies();
+      if (selectedFamily) {
+        const data = await getFamilyById(familyId);
+        setSelectedFamily(data.family);
+        setPeople(data.people);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update family');
+      console.error('Error updating family:', err);
+    }
+  }
+
+  /**
+   * Handles updating a person
+   */
+  async function handleUpdatePerson(
+    personId: string,
+    updates: { firstName: string; phone?: string; email?: string }
+  ) {
+    try {
+      setError(null);
+      await updatePerson(personId, updates);
+
+      // Reload family details
+      if (selectedFamily) {
+        const data = await getFamilyById(selectedFamily.familyId);
+        setPeople(data.people);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update person');
+      console.error('Error updating person:', err);
+    }
+  }
+
+  /**
+   * Handles adding a child to a family
+   */
+  async function handleAddChild(
+    familyId: string,
+    childData: { firstName: string; phone?: string; email?: string }
+  ) {
+    try {
+      setError(null);
+      await addChildToFamily(familyId, childData);
+
+      // Reload family details
+      const data = await getFamilyById(familyId);
+      setPeople(data.people);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add child');
+      console.error('Error adding child:', err);
+    }
+  }
+
+  /**
+   * Handles deleting a person
+   */
+  async function handleDeletePerson(personId: string) {
+    try {
+      setError(null);
+      await deletePerson(personId);
+
+      // Reload family details
+      if (selectedFamily) {
+        const data = await getFamilyById(selectedFamily.familyId);
+        setPeople(data.people);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete person');
+      console.error('Error deleting person:', err);
+    }
+  }
+
+  if (isLoading && families.length === 0) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
@@ -113,13 +225,9 @@ export function FamiliesPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-slate-900">RHBC CRM</h1>
-              <p className="mt-1 text-sm text-slate-600">
-                Church Management System
-              </p>
+              <p className="mt-1 text-sm text-slate-600">Church Management System</p>
             </div>
-            <Button onClick={() => setIsAddDialogOpen(true)}>
-              Add Family
-            </Button>
+            <Button onClick={() => setIsAddDialogOpen(true)}>Add Family</Button>
           </div>
         </div>
       </div>
@@ -143,39 +251,61 @@ export function FamiliesPage() {
           )}
 
           {/* Stats */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatsCard
-              title="Total Families"
-              value={families.length}
-            />
-            <StatsCard
-              title="Member Families"
-              value={memberFamilies.length}
-            />
-            <StatsCard
-              title="Guest Families"
-              value={guestFamilies.length}
-            />
-            <StatsCard
-              title="Total Children"
-              value={children.length}
-            />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <StatsCard title="Total Families" value={families.length} />
+            <StatsCard title="Member Families" value={memberFamilies.length} />
+            <StatsCard title="Guest Families" value={guestFamilies.length} />
+          </div>
+
+          {/* Search and Filters */}
+          <div className="flex gap-4 items-center">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search by last name..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select
+              value={statusFilter}
+              onValueChange={(value: 'all' | 'member' | 'guest') => setStatusFilter(value)}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Families</SelectItem>
+                <SelectItem value="member">Members Only</SelectItem>
+                <SelectItem value="guest">Guests Only</SelectItem>
+              </SelectContent>
+            </Select>
+            {(searchTerm || statusFilter !== 'all') && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearchTerm('');
+                  setStatusFilter('all');
+                }}
+              >
+                Clear Filters
+              </Button>
+            )}
           </div>
 
           {/* Family List */}
           <div>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-2xl font-semibold text-slate-900">
-                Families
-              </h2>
+              <h2 className="text-2xl font-semibold text-slate-900">Families</h2>
               <div className="text-sm text-slate-600">
                 {families.length} {families.length === 1 ? 'family' : 'families'}
+                {(searchTerm || statusFilter !== 'all') && (
+                  <span className="text-slate-500"> (filtered)</span>
+                )}
               </div>
             </div>
-            <FamilyList
-              families={families}
-              onViewDetails={handleViewDetails}
-            />
+            <FamilyList families={families} onViewDetails={handleViewDetails} />
           </div>
         </div>
       </div>
@@ -186,6 +316,10 @@ export function FamiliesPage() {
         people={people}
         open={isDetailsOpen}
         onClose={handleCloseDetails}
+        onUpdateFamily={handleUpdateFamily}
+        onUpdatePerson={handleUpdatePerson}
+        onAddChild={handleAddChild}
+        onDeletePerson={handleDeletePerson}
       />
 
       <AddFamilyDialog
