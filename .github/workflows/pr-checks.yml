@@ -7,9 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  # Build shared package first - other packages depend on it
-  build-shared:
-    name: Build Shared Package
+  backend-tests:
+    name: Backend Tests & Type Check
     runs-on: ubuntu-latest
 
     steps:
@@ -42,57 +41,6 @@ jobs:
       - name: Build shared package
         run: yarn workspace @rhbc-crm/shared build
 
-      # Upload entire shared package (src + dist + configs)
-      - name: Upload shared package
-        uses: actions/upload-artifact@v4
-        with:
-          name: shared-package
-          path: |
-            packages/shared/src
-            packages/shared/dist
-            packages/shared/package.json
-            packages/shared/tsconfig.json
-          retention-days: 1
-
-  backend-tests:
-    name: Backend Tests & Type Check
-    runs-on: ubuntu-latest
-    needs: build-shared
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
-
-      - name: Cache yarn dependencies
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-
-      - name: Install dependencies
-        run: yarn install --immutable
-
-      # Download entire shared package
-      - name: Download shared package
-        uses: actions/download-artifact@v4
-        with:
-          name: shared-package
-          path: packages/shared
-
       - name: Run backend tests
         run: yarn workspace @rhbc-crm/backend test
 
@@ -102,7 +50,6 @@ jobs:
   frontend-checks:
     name: Frontend Type Check & Build
     runs-on: ubuntu-latest
-    needs: build-shared
 
     steps:
       - name: Checkout code
@@ -131,12 +78,8 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
-      # Download entire shared package
-      - name: Download shared package
-        uses: actions/download-artifact@v4
-        with:
-          name: shared-package
-          path: packages/shared
+      - name: Build shared package
+        run: yarn workspace @rhbc-crm/shared build
 
       - name: Frontend type check
         run: yarn workspace @rhbc-crm/frontend type-check
