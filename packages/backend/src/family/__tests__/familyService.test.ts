@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import { mockClient } from 'aws-sdk-client-mock';
-import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
-import { createFamilyWithParent } from '../services/familyService.js';
+import { DynamoDBDocumentClient, PutCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
+import { createFamilyWithParent, addChildToFamily } from '../services/familyService.js';
 
 const ddbMock = mockClient(DynamoDBDocumentClient);
 
@@ -104,6 +104,56 @@ describe('familyService', () => {
 
       // Assert: Verify both database writes happened
       expect(ddbMock.commandCalls(PutCommand).length).toBe(2);
+    });
+  });
+  describe('addChildToFamily', () => {
+    it('should add child to existing family', async () => {
+      // Mock family exists
+      ddbMock.on(GetCommand).resolves({
+        Item: {
+          familyId: 'fam-123',
+          lastName: 'Smith',
+          status: 'member',
+        },
+      });
+
+      // Mock child creation
+      ddbMock.on(PutCommand).resolves({});
+
+      const result = await addChildToFamily('fam-123', {
+        firstName: 'Emma',
+      });
+
+      expect(result.firstName).toBe('Emma');
+      expect(result.familyId).toBe('fam-123');
+      expect(result.role).toBe('child');
+      expect(result.personId).toMatch(/^per-/);
+    });
+
+    it('should throw error if family not found', async () => {
+      ddbMock.on(GetCommand).resolves({});
+
+      await expect(
+        addChildToFamily('fam-nonexistent', {
+          firstName: 'Emma',
+        })
+      ).rejects.toThrow('Family not found');
+    });
+
+    it('should include optional phone and email', async () => {
+      ddbMock.on(GetCommand).resolves({
+        Item: { familyId: 'fam-123' },
+      });
+      ddbMock.on(PutCommand).resolves({});
+
+      const result = await addChildToFamily('fam-123', {
+        firstName: 'Emma',
+        phone: '5551234567',
+        email: 'emma@email.com',
+      });
+
+      expect(result.phone).toBe('5551234567');
+      expect(result.email).toBe('emma@email.com');
     });
   });
 });

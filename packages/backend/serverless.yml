@@ -63,6 +63,14 @@ functions:
           method: post
           cors: true
 
+  addChildToFamily:
+    handler: src/family/handlers/addChild.handler
+    events:
+      - http:
+          path: /families/{id}/children
+          method: post
+          cors: true
+
   getFamily:
     handler: src/family/handlers/getFamily.handler
     events:

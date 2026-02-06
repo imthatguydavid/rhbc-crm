@@ -1,6 +1,6 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { getFamilyById, getPeopleByFamily } from '../services/familyService.js';
-import { success, badRequest, notFound, serverError } from '../../shared/response.js';
+import { success, badRequest, notFound, serverError } from '../../shared/utils/response';
 
 /**
  * Lambda handler for GET /families/{id}

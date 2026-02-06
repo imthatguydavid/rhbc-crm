@@ -229,3 +229,50 @@ export async function getAllPeople(): Promise<Person[]> {
     throw new Error('Failed to retrieve people');
   }
 }
+
+/**
+ * Adds a child to an existing family.
+ *
+ * Creates a new Person record with role='child' and associates it
+ * with the specified family. The family must exist.
+ *
+ * @param familyId - Family ID to add child to
+ * @param childData - Child information
+ * @returns Promise resolving to created Person record
+ * @throws Error if family doesn't exist
+ */
+export async function addChildToFamily(
+  familyId: string,
+  childData: {
+    firstName: string;
+    phone?: string;
+    email?: string;
+  }
+): Promise<Person> {
+  // 1. Verify family exists
+  const family = await getFamilyById(familyId);
+  if (!family) {
+    throw new Error('Family not found');
+  }
+
+  // 2. Generate child ID and timestamp
+  const personId = generatePersonId();
+  const now = new Date().toISOString();
+
+  // 3. Create child record
+  const child: Person = {
+    personId,
+    familyId,
+    firstName: childData.firstName,
+    phone: childData.phone,
+    email: childData.email,
+    role: 'child',
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  // 4. Save to database
+  await createPerson(child);
+
+  return child;
+}
