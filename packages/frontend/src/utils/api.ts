@@ -293,7 +293,8 @@ export async function addChildToFamily(
   }
 
   const data = await response.json();
-  return data.child;
+  console.log('Add child response:', data); // ← Add this
+  return data.person;
 }
 
 /**
@@ -323,7 +324,7 @@ export async function updatePerson(
   }
 
   const data = await response.json();
-  return data.person;
+  return data.child;
 }
 
 /**
