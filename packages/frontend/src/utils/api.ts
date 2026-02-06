@@ -265,3 +265,142 @@ export async function checkOutChild(data: { checkInId: string; pin: string }) {
 
   return await response.json();
 }
+
+/**
+ * Adds a child to an existing family.
+ *
+ * @param familyId - Family ID to add child to
+ * @param childData - Child information
+ * @returns Promise that resolves to created child Person record
+ * @throws {Error} If family not found or API request fails
+ */
+export async function addChildToFamily(
+  familyId: string,
+  childData: {
+    firstName: string;
+    phone?: string;
+    email?: string;
+  }
+) {
+  const response = await fetch(getApiUrl(`/families/${familyId}/children`), {
+    ...API_CONFIG,
+    method: 'POST',
+    body: JSON.stringify(childData),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to add child: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.child;
+}
+
+/**
+ * Updates a person's information.
+ *
+ * @param personId - Person ID to update
+ * @param updates - Fields to update (all optional)
+ * @returns Promise that resolves to updated Person record
+ * @throws {Error} If person not found or API request fails
+ */
+export async function updatePerson(
+  personId: string,
+  updates: {
+    firstName?: string;
+    phone?: string;
+    email?: string;
+  }
+) {
+  const response = await fetch(getApiUrl(`/people/${personId}`), {
+    ...API_CONFIG,
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to update person: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.person;
+}
+
+/**
+ * Updates a family's information.
+ *
+ * @param familyId - Family ID to update
+ * @param updates - Fields to update (all optional)
+ * @returns Promise that resolves to updated Family record
+ * @throws {Error} If family not found or API request fails
+ */
+export async function updateFamily(
+  familyId: string,
+  updates: {
+    lastName?: string;
+    status?: 'member' | 'guest';
+  }
+) {
+  const response = await fetch(getApiUrl(`/families/${familyId}`), {
+    ...API_CONFIG,
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to update family: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.family;
+}
+
+/**
+ * Soft deletes a person (marks as deleted).
+ *
+ * @param personId - Person ID to delete
+ * @returns Promise that resolves to deleted Person record
+ * @throws {Error} If person not found, already deleted, or API request fails
+ */
+export async function deletePerson(personId: string) {
+  const response = await fetch(getApiUrl(`/people/${personId}`), {
+    ...API_CONFIG,
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || `Failed to delete person: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.person;
+}
+
+/**
+ * Searches/filters families by lastName and/or status.
+ *
+ * @param filters - Optional search filters
+ * @returns Promise that resolves to array of Family objects
+ * @throws {Error} If API request fails
+ */
+export async function searchFamilies(filters?: { search?: string; status?: 'member' | 'guest' }) {
+  const params = new URLSearchParams();
+  if (filters?.search) params.append('search', filters.search);
+  if (filters?.status) params.append('status', filters.status);
+
+  const url = params.toString()
+    ? `${getApiUrl(API_ENDPOINTS.GET_FAMILIES)}?${params}`
+    : getApiUrl(API_ENDPOINTS.GET_FAMILIES);
+
+  const response = await fetch(url, {
+    ...API_CONFIG,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to search families: ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.families;
+}
