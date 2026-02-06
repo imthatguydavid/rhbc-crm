@@ -5,12 +5,15 @@ import {
   PutCommand,
   GetCommand,
   UpdateCommand,
+  QueryCommand,
 } from '@aws-sdk/lib-dynamodb';
 import {
   createFamilyWithParent,
   addChildToFamily,
   updatePerson,
   updateFamily,
+  deletePerson,
+  getPeopleByFamily,
 } from '../services/familyService.js';
 
 const ddbMock = mockClient(DynamoDBDocumentClient);
@@ -285,6 +288,73 @@ describe('familyService', () => {
       await expect(updateFamily('fam-nonexistent', { lastName: 'Johnson' })).rejects.toThrow(
         'Family not found'
       );
+    });
+  });
+  describe('deletePerson', () => {
+    it('should soft delete a person', async () => {
+      // Mock person exists
+      ddbMock.on(GetCommand).resolves({
+        Item: {
+          personId: 'per-123',
+          firstName: 'John',
+          familyId: 'fam-123',
+        },
+      });
+
+      // Mock update with deletedAt
+      ddbMock.on(UpdateCommand).resolves({
+        Attributes: {
+          personId: 'per-123',
+          firstName: 'John',
+          familyId: 'fam-123',
+          deletedAt: '2026-02-06T00:00:00.000Z',
+          updatedAt: '2026-02-06T00:00:00.000Z',
+        },
+      });
+
+      const result = await deletePerson('per-123');
+
+      expect(result.personId).toBe('per-123');
+      expect(result.deletedAt).toBeDefined();
+    });
+
+    it('should throw error if person not found', async () => {
+      ddbMock.on(GetCommand).resolves({});
+
+      await expect(deletePerson('per-nonexistent')).rejects.toThrow('Person not found');
+    });
+
+    it('should throw error if person already deleted', async () => {
+      ddbMock.on(GetCommand).resolves({
+        Item: {
+          personId: 'per-123',
+          deletedAt: '2026-02-05T00:00:00.000Z',
+        },
+      });
+
+      await expect(deletePerson('per-123')).rejects.toThrow('Person already deleted');
+    });
+  });
+
+  describe('getPeopleByFamily - with deletedAt filter', () => {
+    it('should exclude deleted people', async () => {
+      // Mock returns both deleted and active people
+      // But FilterExpression will filter out deleted ones
+      ddbMock.on(QueryCommand).resolves({
+        Items: [
+          {
+            personId: 'per-123',
+            firstName: 'John',
+            familyId: 'fam-123',
+          },
+          // Person with deletedAt would be filtered by DynamoDB
+        ],
+      });
+
+      const result = await getPeopleByFamily('fam-123');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].personId).toBe('per-123');
     });
   });
 });

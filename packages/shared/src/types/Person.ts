@@ -101,4 +101,12 @@ export interface Person {
    * @example "2026-01-31T14:30:00.000Z"
    */
   updatedAt: string;
+
+  /**
+   * ISO 8601 timestamp when person record was deleted.
+   * Updated whenever any information changes.
+   *
+   * @example "2026-01-31T14:30:00.000Z"
+   */
+  deletedAt?: string;
 }

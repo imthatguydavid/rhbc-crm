@@ -18,7 +18,8 @@
     "backend:deploy:prod": "yarn workspace @rhbc-crm/backend deploy:prod",
     "backend:offline": "yarn workspace @rhbc-crm/backend offline",
     "backend:test": "yarn workspace @rhbc-crm/backend test",
-    "backend:logs": "yarn workspace @rhbc-crm/backend logs:checkIn"
+    "backend:logs": "yarn workspace @rhbc-crm/backend logs:checkIn",
+    "build": "yarn workspace @rhbc-crm/shared build"
   },
   "devDependencies": {
     "@types/node": "^25.1.0",

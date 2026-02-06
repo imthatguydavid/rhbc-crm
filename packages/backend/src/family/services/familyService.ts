@@ -1,6 +1,6 @@
 import { PutCommand, QueryCommand, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import type { Family, Person } from '@rhbc-crm/shared';
-import { dynamoDb, Tables } from '../../shared/dynamodb.js';
+import { dynamoDb, Tables } from '../../shared/utils/dynamodb';
 
 /**
  * Generates a unique family ID with timestamp
@@ -177,26 +177,29 @@ export async function createFamily(family: Family): Promise<Family> {
 }
 
 /**
- * Get all people for a specific family
+ * Gets all people (not deleted) in a family.
+ *
+ * Queries the familyId-index GSI to efficiently retrieve all family members.
+ * Filters out soft-deleted people (those with deletedAt set).
+ *
+ * @param familyId - Family ID to get people for
+ * @returns Promise resolving to array of Person records
  */
 export async function getPeopleByFamily(familyId: string): Promise<Person[]> {
-  try {
-    const result = await dynamoDb.send(
-      new QueryCommand({
-        TableName: Tables.PEOPLE,
-        IndexName: 'familyId-index',
-        KeyConditionExpression: 'familyId = :familyId',
-        ExpressionAttributeValues: {
-          ':familyId': familyId,
-        },
-      })
-    );
+  const result = await dynamoDb.send(
+    new QueryCommand({
+      TableName: Tables.PEOPLE,
+      IndexName: 'familyId-index',
+      KeyConditionExpression: 'familyId = :familyId',
+      // Filter out deleted people
+      FilterExpression: 'attribute_not_exists(deletedAt)',
+      ExpressionAttributeValues: {
+        ':familyId': familyId,
+      },
+    })
+  );
 
-    return (result.Items || []) as Person[];
-  } catch (error) {
-    console.error('Error getting people for family:', error);
-    throw new Error('Failed to retrieve family members');
-  }
+  return (result.Items as Person[]) || [];
 }
 
 /**
@@ -420,4 +423,49 @@ export async function updateFamily(
   );
 
   return result.Attributes as Family;
+}
+
+/**
+ * Soft deletes a person by marking them as deleted.
+ *
+ * Sets deletedAt timestamp instead of actually removing from database.
+ * This preserves data integrity and allows for restoration if needed.
+ *
+ * @param personId - Person ID to soft delete
+ * @returns Promise resolving to updated Person record with deletedAt set
+ * @throws Error if person doesn't exist or already deleted
+ */
+export async function deletePerson(personId: string): Promise<Person> {
+  // 1. Get existing person
+  const existingPerson = await getPersonById(personId);
+  if (!existingPerson) {
+    throw new Error('Person not found');
+  }
+
+  // 2. Check if already deleted
+  if (existingPerson.deletedAt) {
+    throw new Error('Person already deleted');
+  }
+
+  // 3. Mark as deleted
+  const now = new Date().toISOString();
+
+  const result = await dynamoDb.send(
+    new UpdateCommand({
+      TableName: Tables.PEOPLE,
+      Key: { personId },
+      UpdateExpression: 'SET #deletedAt = :deletedAt, #updatedAt = :updatedAt',
+      ExpressionAttributeNames: {
+        '#deletedAt': 'deletedAt',
+        '#updatedAt': 'updatedAt',
+      },
+      ExpressionAttributeValues: {
+        ':deletedAt': now,
+        ':updatedAt': now,
+      },
+      ReturnValues: 'ALL_NEW',
+    })
+  );
+
+  return result.Attributes as Person;
 }
