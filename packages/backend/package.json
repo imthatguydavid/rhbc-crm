@@ -8,6 +8,7 @@
     "test": "NODE_OPTIONS='--experimental-vm-modules' yarn exec jest",
     "test:watch": "NODE_OPTIONS='--experimental-vm-modules' yarn exec jest --watch",
     "test:coverage": "NODE_OPTIONS='--experimental-vm-modules' yarn exec jest --coverage",
+    "type-check": "tsc --noEmit",
     "deploy": "serverless deploy --stage dev",
     "deploy:prod": "serverless deploy --stage prod",
     "deploy:info": "serverless info --stage dev",
