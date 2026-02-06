@@ -360,3 +360,64 @@ export async function updatePerson(
 
   return result.Attributes as Person;
 }
+
+/**
+ * Updates a family's information.
+ *
+ * Only updates fields that are provided. All fields are optional.
+ *
+ * @param familyId - Family ID to update
+ * @param updates - Fields to update
+ * @returns Promise resolving to updated Family record
+ * @throws Error if family doesn't exist
+ */
+export async function updateFamily(
+  familyId: string,
+  updates: {
+    lastName?: string;
+    status?: 'member' | 'guest';
+  }
+): Promise<Family> {
+  // 1. Get existing family
+  const existingFamily = await getFamilyById(familyId);
+  if (!existingFamily) {
+    throw new Error('Family not found');
+  }
+
+  // 2. Build update expression dynamically
+  const updateExpressions: string[] = [];
+  const expressionAttributeNames: Record<string, string> = {};
+  const expressionAttributeValues: Record<string, any> = {};
+
+  // Add fields that are being updated
+  if (updates.lastName !== undefined) {
+    updateExpressions.push('#lastName = :lastName');
+    expressionAttributeNames['#lastName'] = 'lastName';
+    expressionAttributeValues[':lastName'] = updates.lastName;
+  }
+
+  if (updates.status !== undefined) {
+    updateExpressions.push('#status = :status');
+    expressionAttributeNames['#status'] = 'status';
+    expressionAttributeValues[':status'] = updates.status;
+  }
+
+  // Always update updatedAt
+  updateExpressions.push('#updatedAt = :updatedAt');
+  expressionAttributeNames['#updatedAt'] = 'updatedAt';
+  expressionAttributeValues[':updatedAt'] = new Date().toISOString();
+
+  // 3. Update in database
+  const result = await dynamoDb.send(
+    new UpdateCommand({
+      TableName: Tables.FAMILIES,
+      Key: { familyId },
+      UpdateExpression: `SET ${updateExpressions.join(', ')}`,
+      ExpressionAttributeNames: expressionAttributeNames,
+      ExpressionAttributeValues: expressionAttributeValues,
+      ReturnValues: 'ALL_NEW',
+    })
+  );
+
+  return result.Attributes as Family;
+}

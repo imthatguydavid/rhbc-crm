@@ -79,6 +79,14 @@ functions:
           method: put
           cors: true
 
+  updateFamily:
+    handler: src/family/handlers/updateFamily.handler
+    events:
+      - http:
+          path: /families/{id}
+          method: put
+          cors: true
+
   getFamily:
     handler: src/family/handlers/getFamily.handler
     events:

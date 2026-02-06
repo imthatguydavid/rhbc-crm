@@ -10,6 +10,7 @@ import {
   createFamilyWithParent,
   addChildToFamily,
   updatePerson,
+  updateFamily,
 } from '../services/familyService.js';
 
 const ddbMock = mockClient(DynamoDBDocumentClient);
@@ -225,6 +226,64 @@ describe('familyService', () => {
 
       await expect(updatePerson('per-nonexistent', { firstName: 'Jane' })).rejects.toThrow(
         'Person not found'
+      );
+    });
+  });
+  describe('updateFamily', () => {
+    it('should update family lastName', async () => {
+      // Mock family exists
+      ddbMock.on(GetCommand).resolves({
+        Item: {
+          familyId: 'fam-123',
+          lastName: 'Smith',
+          status: 'member',
+        },
+      });
+
+      // Mock update
+      ddbMock.on(UpdateCommand).resolves({
+        Attributes: {
+          familyId: 'fam-123',
+          lastName: 'Johnson',
+          status: 'member',
+          updatedAt: '2026-02-06T00:00:00.000Z',
+        },
+      });
+
+      const result = await updateFamily('fam-123', {
+        lastName: 'Johnson',
+      });
+
+      expect(result.lastName).toBe('Johnson');
+      expect(result.status).toBe('member');
+    });
+
+    it('should update family status', async () => {
+      ddbMock.on(GetCommand).resolves({
+        Item: { familyId: 'fam-123', lastName: 'Smith', status: 'guest' },
+      });
+
+      ddbMock.on(UpdateCommand).resolves({
+        Attributes: {
+          familyId: 'fam-123',
+          lastName: 'Smith',
+          status: 'member',
+          updatedAt: '2026-02-06T00:00:00.000Z',
+        },
+      });
+
+      const result = await updateFamily('fam-123', {
+        status: 'member',
+      });
+
+      expect(result.status).toBe('member');
+    });
+
+    it('should throw error if family not found', async () => {
+      ddbMock.on(GetCommand).resolves({});
+
+      await expect(updateFamily('fam-nonexistent', { lastName: 'Johnson' })).rejects.toThrow(
+        'Family not found'
       );
     });
   });
