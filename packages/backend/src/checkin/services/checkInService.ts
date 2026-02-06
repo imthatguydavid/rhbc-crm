@@ -1,5 +1,5 @@
 import { PutCommand, GetCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import type { CheckIn } from '@rhbc-crm/shared';
+import type { CheckIn, Person } from '@rhbc-crm/shared';
 import { dynamoDb, Tables } from '../../shared/utils/dynamodb';
 
 /**
@@ -306,21 +306,27 @@ export async function bulkCheckInChildren(data: {
  * Checks out all children associated with a PIN.
  *
  * Finds all active check-ins with the given PIN and marks them as checked out.
+ * Fetches child names from the People table to include in the response.
  * Used for kiosk mode where one PIN checks out multiple children.
  *
  * @param pin - 4-digit PIN provided by parent
  *
- * @returns Promise resolving to array of checked-out records
+ * @returns Promise resolving to array of checked-out records with child names and success message
  * @throws {Error} If PIN is incorrect or no active check-ins found
  *
  * @example
  * ```typescript
  * const result = await checkOutByPin('4289');
- * // Returns: { checkIns: [...], message: '2 children checked out' }
+ * // Returns: {
+ * //   checkIns: [
+ * //     { checkInId: 'chk-1', childName: 'Emma', ... },
+ * //     { checkInId: 'chk-2', childName: 'Noah', ... }
+ * //   ],
+ * //   message: '2 children checked out successfully'
+ * // }
  * ```
- */
 export async function checkOutByPin(pin: string): Promise<{
-  checkIns: CheckIn[];
+  checkIns: Array<CheckIn & { childName?: string }>;
   message: string;
 }> {
   if (!pin || pin.length !== 4) {
@@ -339,7 +345,7 @@ export async function checkOutByPin(pin: string): Promise<{
     }
 
     const checkOutTime = new Date().toISOString();
-    const checkedOutRecords: CheckIn[] = [];
+    const checkedOutRecords: Array<CheckIn & { childName?: string }> = [];
 
     // Check out all matching children
     for (const checkIn of matchingCheckIns) {
@@ -371,7 +377,26 @@ export async function checkOutByPin(pin: string): Promise<{
         })
       );
 
-      checkedOutRecords.push(updatedCheckIn);
+      // Fetch child name
+      try {
+        const personResult = await dynamoDb.send(
+          new GetCommand({
+            TableName: Tables.PEOPLE,
+            Key: {
+              personId: checkIn.childId,
+            },
+          })
+        );
+
+        const child = personResult.Item as Person | undefined;
+        checkedOutRecords.push({
+          ...updatedCheckIn,
+          childName: child?.firstName,
+        });
+      } catch (error) {
+        console.error(`Error fetching child name for ${checkIn.childId}:`, error);
+        checkedOutRecords.push(updatedCheckIn);
+      }
     }
 
     return {
