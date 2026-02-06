@@ -1,5 +1,5 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { created, badRequest, serverError } from '../../shared/response.js';
+import { created, badRequest, serverError } from '../../shared/utils/response';
 import { createFamilyWithParent } from '../services/familyService.js';
 
 /**

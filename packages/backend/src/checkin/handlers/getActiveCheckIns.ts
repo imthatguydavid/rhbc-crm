@@ -1,6 +1,6 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { getActiveCheckIns } from '../services/checkInService.js';
-import { success, serverError } from '../../shared/response.js';
+import { success, serverError } from '../../shared/utils/response';
 
 /**
  * Lambda handler for GET /checkin/active

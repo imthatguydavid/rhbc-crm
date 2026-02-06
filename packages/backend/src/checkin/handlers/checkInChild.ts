@@ -1,6 +1,6 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { checkInChild } from '../services/checkInService.js';
-import { created, badRequest, serverError } from '../../shared/response';
+import { created, badRequest, serverError } from '../../shared/utils/response';
 
 /**
  * Request body for checking in a child

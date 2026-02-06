@@ -1,6 +1,6 @@
 import { PutCommand, GetCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import type { CheckIn } from '@rhbc-crm/shared';
-import { dynamoDb, Tables } from '../../shared/dynamodb.js';
+import { dynamoDb, Tables } from '../../shared/utils/dynamodb';
 
 /**
  * Generates a random 6-character alphanumeric string for IDs

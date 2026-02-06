@@ -1,6 +1,6 @@
-import { PutCommand, QueryCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
+import { PutCommand, QueryCommand, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import type { Family, Person } from '@rhbc-crm/shared';
-import { dynamoDb, Tables } from '../../shared/dynamodb.js';
+import { dynamoDb, Tables } from '../../shared/utils/dynamodb';
 
 /**
  * Generates a unique family ID with timestamp
@@ -21,6 +21,22 @@ function generatePersonId(): string {
  * Used for efficient querying via GSI
  */
 const FAMILY_PK = 'FAMILY';
+/**
+ * Gets a person by ID.
+ *
+ * @param personId - Person ID to retrieve
+ * @returns Promise resolving to Person or null if not found
+ */
+export async function getPersonById(personId: string): Promise<Person | null> {
+  const result = await dynamoDb.send(
+    new GetCommand({
+      TableName: Tables.PEOPLE,
+      Key: { personId },
+    })
+  );
+
+  return result.Item as Person | null;
+}
 
 /**
  * Creates a new family with a parent contact in one operation
@@ -87,28 +103,60 @@ export async function createFamilyWithParent(data: {
 }
 
 /**
- * Get all families using Query (not Scan!)
- * Uses pk-createdAt-index GSI for efficient retrieval
+ * Gets all families with optional search and status filtering.
+ *
+ * Queries the pk-createdAt-index GSI for efficient retrieval.
+ * Filters results based on provided search and status parameters.
+ *
+ * @param filters - Optional search filters
+ * @param filters.search - Search term for lastName (case-insensitive partial match)
+ * @param filters.status - Filter by family status (member or guest)
+ * @returns Promise resolving to array of Family records
  */
-export async function getAllFamilies(): Promise<Family[]> {
-  try {
-    const result = await dynamoDb.send(
-      new QueryCommand({
-        TableName: Tables.FAMILIES,
-        IndexName: 'pk-createdAt-index',
-        KeyConditionExpression: 'pk = :pk',
-        ExpressionAttributeValues: {
-          ':pk': FAMILY_PK,
-        },
-        ScanIndexForward: false, // Newest families first
-      })
-    );
+export async function getAllFamilies(filters?: {
+  search?: string;
+  status?: 'member' | 'guest';
+}): Promise<Family[]> {
+  // Build filter expression dynamically
+  const filterExpressions: string[] = [];
+  const expressionAttributeNames: Record<string, string> = {};
+  const expressionAttributeValues: Record<string, any> = {};
 
-    return (result.Items || []) as Family[];
-  } catch (error) {
-    console.error('Error getting families:', error);
-    throw new Error('Failed to retrieve families');
+  // Add status filter if provided
+  if (filters?.status) {
+    filterExpressions.push('#status = :status');
+    expressionAttributeNames['#status'] = 'status';
+    expressionAttributeValues[':status'] = filters.status;
   }
+
+  // Query DynamoDB
+  const queryParams: any = {
+    TableName: Tables.FAMILIES,
+    IndexName: 'pk-createdAt-index',
+    KeyConditionExpression: 'pk = :pk',
+    ExpressionAttributeValues: {
+      ':pk': 'FAMILY',
+      ...expressionAttributeValues,
+    },
+    ScanIndexForward: false, // Most recent first
+  };
+
+  // Add filter expression if we have filters
+  if (filterExpressions.length > 0) {
+    queryParams.FilterExpression = filterExpressions.join(' AND ');
+    queryParams.ExpressionAttributeNames = expressionAttributeNames;
+  }
+
+  const result = await dynamoDb.send(new QueryCommand(queryParams));
+  let families = (result.Items as Family[]) || [];
+
+  // Client-side search filter for lastName (DynamoDB doesn't support CONTAINS on non-key attributes in KeyCondition)
+  if (filters?.search) {
+    const searchTerm = filters.search.toLowerCase();
+    families = families.filter((family) => family.lastName.toLowerCase().includes(searchTerm));
+  }
+
+  return families;
 }
 
 /**
@@ -161,26 +209,29 @@ export async function createFamily(family: Family): Promise<Family> {
 }
 
 /**
- * Get all people for a specific family
+ * Gets all people (not deleted) in a family.
+ *
+ * Queries the familyId-index GSI to efficiently retrieve all family members.
+ * Filters out soft-deleted people (those with deletedAt set).
+ *
+ * @param familyId - Family ID to get people for
+ * @returns Promise resolving to array of Person records
  */
 export async function getPeopleByFamily(familyId: string): Promise<Person[]> {
-  try {
-    const result = await dynamoDb.send(
-      new QueryCommand({
-        TableName: Tables.PEOPLE,
-        IndexName: 'familyId-index',
-        KeyConditionExpression: 'familyId = :familyId',
-        ExpressionAttributeValues: {
-          ':familyId': familyId,
-        },
-      })
-    );
+  const result = await dynamoDb.send(
+    new QueryCommand({
+      TableName: Tables.PEOPLE,
+      IndexName: 'familyId-index',
+      KeyConditionExpression: 'familyId = :familyId',
+      // Filter out deleted people
+      FilterExpression: 'attribute_not_exists(deletedAt)',
+      ExpressionAttributeValues: {
+        ':familyId': familyId,
+      },
+    })
+  );
 
-    return (result.Items || []) as Person[];
-  } catch (error) {
-    console.error('Error getting people for family:', error);
-    throw new Error('Failed to retrieve family members');
-  }
+  return (result.Items as Person[]) || [];
 }
 
 /**
@@ -228,4 +279,225 @@ export async function getAllPeople(): Promise<Person[]> {
     console.error('Error getting all people:', error);
     throw new Error('Failed to retrieve people');
   }
+}
+
+/**
+ * Adds a child to an existing family.
+ *
+ * Creates a new Person record with role='child' and associates it
+ * with the specified family. The family must exist.
+ *
+ * @param familyId - Family ID to add child to
+ * @param childData - Child information
+ * @returns Promise resolving to created Person record
+ * @throws Error if family doesn't exist
+ */
+export async function addChildToFamily(
+  familyId: string,
+  childData: {
+    firstName: string;
+    phone?: string;
+    email?: string;
+  }
+): Promise<Person> {
+  // 1. Verify family exists
+  const family = await getFamilyById(familyId);
+  if (!family) {
+    throw new Error('Family not found');
+  }
+
+  // 2. Generate child ID and timestamp
+  const personId = generatePersonId();
+  const now = new Date().toISOString();
+
+  // 3. Create child record
+  const child: Person = {
+    personId,
+    familyId,
+    firstName: childData.firstName,
+    phone: childData.phone,
+    email: childData.email,
+    role: 'child',
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  // 4. Save to database
+  await createPerson(child);
+
+  return child;
+}
+
+/**
+ * Updates a person's information.
+ *
+ * Only updates fields that are provided. All fields are optional.
+ *
+ * @param personId - Person ID to update
+ * @param updates - Fields to update
+ * @returns Promise resolving to updated Person record
+ * @throws Error if person doesn't exist
+ */
+export async function updatePerson(
+  personId: string,
+  updates: {
+    firstName?: string;
+    phone?: string;
+    email?: string;
+  }
+): Promise<Person> {
+  // 1. Get existing person
+  const existingPerson = await getPersonById(personId);
+  if (!existingPerson) {
+    throw new Error('Person not found');
+  }
+
+  // 2. Build update expression dynamically
+  const updateExpressions: string[] = [];
+  const expressionAttributeNames: Record<string, string> = {};
+  const expressionAttributeValues: Record<string, any> = {};
+
+  // Add fields that are being updated
+  if (updates.firstName !== undefined) {
+    updateExpressions.push('#firstName = :firstName');
+    expressionAttributeNames['#firstName'] = 'firstName';
+    expressionAttributeValues[':firstName'] = updates.firstName;
+  }
+
+  if (updates.phone !== undefined) {
+    updateExpressions.push('#phone = :phone');
+    expressionAttributeNames['#phone'] = 'phone';
+    expressionAttributeValues[':phone'] = updates.phone;
+  }
+
+  if (updates.email !== undefined) {
+    updateExpressions.push('#email = :email');
+    expressionAttributeNames['#email'] = 'email';
+    expressionAttributeValues[':email'] = updates.email;
+  }
+
+  // Always update updatedAt
+  updateExpressions.push('#updatedAt = :updatedAt');
+  expressionAttributeNames['#updatedAt'] = 'updatedAt';
+  expressionAttributeValues[':updatedAt'] = new Date().toISOString();
+
+  // 3. Update in database
+  const result = await dynamoDb.send(
+    new UpdateCommand({
+      TableName: Tables.PEOPLE,
+      Key: { personId },
+      UpdateExpression: `SET ${updateExpressions.join(', ')}`,
+      ExpressionAttributeNames: expressionAttributeNames,
+      ExpressionAttributeValues: expressionAttributeValues,
+      ReturnValues: 'ALL_NEW',
+    })
+  );
+
+  return result.Attributes as Person;
+}
+
+/**
+ * Updates a family's information.
+ *
+ * Only updates fields that are provided. All fields are optional.
+ *
+ * @param familyId - Family ID to update
+ * @param updates - Fields to update
+ * @returns Promise resolving to updated Family record
+ * @throws Error if family doesn't exist
+ */
+export async function updateFamily(
+  familyId: string,
+  updates: {
+    lastName?: string;
+    status?: 'member' | 'guest';
+  }
+): Promise<Family> {
+  // 1. Get existing family
+  const existingFamily = await getFamilyById(familyId);
+  if (!existingFamily) {
+    throw new Error('Family not found');
+  }
+
+  // 2. Build update expression dynamically
+  const updateExpressions: string[] = [];
+  const expressionAttributeNames: Record<string, string> = {};
+  const expressionAttributeValues: Record<string, any> = {};
+
+  // Add fields that are being updated
+  if (updates.lastName !== undefined) {
+    updateExpressions.push('#lastName = :lastName');
+    expressionAttributeNames['#lastName'] = 'lastName';
+    expressionAttributeValues[':lastName'] = updates.lastName;
+  }
+
+  if (updates.status !== undefined) {
+    updateExpressions.push('#status = :status');
+    expressionAttributeNames['#status'] = 'status';
+    expressionAttributeValues[':status'] = updates.status;
+  }
+
+  // Always update updatedAt
+  updateExpressions.push('#updatedAt = :updatedAt');
+  expressionAttributeNames['#updatedAt'] = 'updatedAt';
+  expressionAttributeValues[':updatedAt'] = new Date().toISOString();
+
+  // 3. Update in database
+  const result = await dynamoDb.send(
+    new UpdateCommand({
+      TableName: Tables.FAMILIES,
+      Key: { familyId },
+      UpdateExpression: `SET ${updateExpressions.join(', ')}`,
+      ExpressionAttributeNames: expressionAttributeNames,
+      ExpressionAttributeValues: expressionAttributeValues,
+      ReturnValues: 'ALL_NEW',
+    })
+  );
+
+  return result.Attributes as Family;
+}
+
+/**
+ * Soft deletes a person by marking them as deleted.
+ *
+ * Sets deletedAt timestamp instead of actually removing from database.
+ * This preserves data integrity and allows for restoration if needed.
+ *
+ * @param personId - Person ID to soft delete
+ * @returns Promise resolving to updated Person record with deletedAt set
+ * @throws Error if person doesn't exist or already deleted
+ */
+export async function deletePerson(personId: string): Promise<Person> {
+  // 1. Get existing person
+  const existingPerson = await getPersonById(personId);
+  if (!existingPerson) {
+    throw new Error('Person not found');
+  }
+
+  // 2. Check if already deleted
+  if (existingPerson.deletedAt) {
+    throw new Error('Person already deleted');
+  }
+
+  // 3. Mark as deleted
+  const now = new Date().toISOString();
+
+  const result = await dynamoDb.send(
+    new UpdateCommand({
+      TableName: Tables.PEOPLE,
+      Key: { personId },
+      UpdateExpression: 'SET #deletedAt = :deletedAt, #updatedAt = :updatedAt',
+      ExpressionAttributeNames: {
+        '#deletedAt': 'deletedAt',
+        '#updatedAt': 'updatedAt',
+      },
+      ExpressionAttributeValues: {
+        ':deletedAt': now,
+        ':updatedAt': now,
+      },
+      ReturnValues: 'ALL_NEW',
+    })
+  );
+
+  return result.Attributes as Person;
 }
