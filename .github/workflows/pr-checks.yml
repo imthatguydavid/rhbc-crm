@@ -42,17 +42,18 @@ jobs:
       - name: Build shared package
         run: yarn workspace @rhbc-crm/shared build
 
-      # Cache the built shared package for other jobs
-      - name: Cache shared build
-        uses: actions/cache@v4
+      # Upload the built shared package as an artifact
+      - name: Upload shared build
+        uses: actions/upload-artifact@v4
         with:
+          name: shared-dist
           path: packages/shared/dist
-          key: shared-build-${{ github.sha }}
+          retention-days: 1
 
   backend-tests:
     name: Backend Tests & Type Check
     runs-on: ubuntu-latest
-    needs: build-shared  # Wait for shared to build first
+    needs: build-shared
 
     steps:
       - name: Checkout code
@@ -81,12 +82,12 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
-      # Restore shared package build
-      - name: Restore shared build
-        uses: actions/cache@v4
+      # Download the shared build artifact
+      - name: Download shared build
+        uses: actions/download-artifact@v4
         with:
+          name: shared-dist
           path: packages/shared/dist
-          key: shared-build-${{ github.sha }}
 
       - name: Run backend tests
         run: yarn workspace @rhbc-crm/backend test
@@ -97,7 +98,7 @@ jobs:
   frontend-checks:
     name: Frontend Type Check & Build
     runs-on: ubuntu-latest
-    needs: build-shared  # Wait for shared to build first
+    needs: build-shared
 
     steps:
       - name: Checkout code
@@ -126,12 +127,12 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
-      # Restore shared package build
-      - name: Restore shared build
-        uses: actions/cache@v4
+      # Download the shared build artifact
+      - name: Download shared build
+        uses: actions/download-artifact@v4
         with:
+          name: shared-dist
           path: packages/shared/dist
-          key: shared-build-${{ github.sha }}
 
       - name: Frontend type check
         run: yarn workspace @rhbc-crm/frontend type-check
