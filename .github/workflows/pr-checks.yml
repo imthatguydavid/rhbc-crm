@@ -39,7 +39,9 @@ jobs:
         run: yarn install --immutable
 
       - name: Build shared package
-        run: yarn workspace @rhbc-crm/shared build
+        run: |
+          yarn workspace @rhbc-crm/shared clean
+          yarn workspace @rhbc-crm/shared build
 
       # DEBUG: Show what was built
       - name: Debug - List shared dist contents
@@ -92,7 +94,9 @@ jobs:
         run: yarn install --immutable
 
       - name: Build shared package
-        run: yarn workspace @rhbc-crm/shared build
+        run: |
+          yarn workspace @rhbc-crm/shared clean
+          yarn workspace @rhbc-crm/shared build
 
       # DEBUG: Show what was built
       - name: Debug - List shared dist contents
