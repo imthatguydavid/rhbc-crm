@@ -103,28 +103,60 @@ export async function createFamilyWithParent(data: {
 }
 
 /**
- * Get all families using Query (not Scan!)
- * Uses pk-createdAt-index GSI for efficient retrieval
+ * Gets all families with optional search and status filtering.
+ *
+ * Queries the pk-createdAt-index GSI for efficient retrieval.
+ * Filters results based on provided search and status parameters.
+ *
+ * @param filters - Optional search filters
+ * @param filters.search - Search term for lastName (case-insensitive partial match)
+ * @param filters.status - Filter by family status (member or guest)
+ * @returns Promise resolving to array of Family records
  */
-export async function getAllFamilies(): Promise<Family[]> {
-  try {
-    const result = await dynamoDb.send(
-      new QueryCommand({
-        TableName: Tables.FAMILIES,
-        IndexName: 'pk-createdAt-index',
-        KeyConditionExpression: 'pk = :pk',
-        ExpressionAttributeValues: {
-          ':pk': FAMILY_PK,
-        },
-        ScanIndexForward: false, // Newest families first
-      })
-    );
+export async function getAllFamilies(filters?: {
+  search?: string;
+  status?: 'member' | 'guest';
+}): Promise<Family[]> {
+  // Build filter expression dynamically
+  const filterExpressions: string[] = [];
+  const expressionAttributeNames: Record<string, string> = {};
+  const expressionAttributeValues: Record<string, any> = {};
 
-    return (result.Items || []) as Family[];
-  } catch (error) {
-    console.error('Error getting families:', error);
-    throw new Error('Failed to retrieve families');
+  // Add status filter if provided
+  if (filters?.status) {
+    filterExpressions.push('#status = :status');
+    expressionAttributeNames['#status'] = 'status';
+    expressionAttributeValues[':status'] = filters.status;
   }
+
+  // Query DynamoDB
+  const queryParams: any = {
+    TableName: Tables.FAMILIES,
+    IndexName: 'pk-createdAt-index',
+    KeyConditionExpression: 'pk = :pk',
+    ExpressionAttributeValues: {
+      ':pk': 'FAMILY',
+      ...expressionAttributeValues,
+    },
+    ScanIndexForward: false, // Most recent first
+  };
+
+  // Add filter expression if we have filters
+  if (filterExpressions.length > 0) {
+    queryParams.FilterExpression = filterExpressions.join(' AND ');
+    queryParams.ExpressionAttributeNames = expressionAttributeNames;
+  }
+
+  const result = await dynamoDb.send(new QueryCommand(queryParams));
+  let families = (result.Items as Family[]) || [];
+
+  // Client-side search filter for lastName (DynamoDB doesn't support CONTAINS on non-key attributes in KeyCondition)
+  if (filters?.search) {
+    const searchTerm = filters.search.toLowerCase();
+    families = families.filter((family) => family.lastName.toLowerCase().includes(searchTerm));
+  }
+
+  return families;
 }
 
 /**

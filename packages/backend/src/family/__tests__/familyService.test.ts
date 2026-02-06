@@ -14,6 +14,7 @@ import {
   updateFamily,
   deletePerson,
   getPeopleByFamily,
+  getAllFamilies,
 } from '../services/familyService.js';
 
 const ddbMock = mockClient(DynamoDBDocumentClient);
@@ -355,6 +356,120 @@ describe('familyService', () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].personId).toBe('per-123');
+    });
+  });
+  describe('getAllFamilies - with search and filters', () => {
+    it('should return all families when no filters provided', async () => {
+      ddbMock.on(QueryCommand).resolves({
+        Items: [
+          {
+            familyId: 'fam-1',
+            lastName: 'Smith',
+            status: 'member',
+            pk: 'FAMILY',
+          },
+          {
+            familyId: 'fam-2',
+            lastName: 'Johnson',
+            status: 'guest',
+            pk: 'FAMILY',
+          },
+        ],
+      });
+
+      const result = await getAllFamilies();
+
+      expect(result).toHaveLength(2);
+    });
+
+    it('should filter by status', async () => {
+      ddbMock.on(QueryCommand).resolves({
+        Items: [
+          {
+            familyId: 'fam-1',
+            lastName: 'Smith',
+            status: 'member',
+            pk: 'FAMILY',
+          },
+          // Guest families filtered by DynamoDB FilterExpression
+        ],
+      });
+
+      const result = await getAllFamilies({ status: 'member' });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].status).toBe('member');
+    });
+
+    it('should search by lastName (case-insensitive)', async () => {
+      ddbMock.on(QueryCommand).resolves({
+        Items: [
+          {
+            familyId: 'fam-1',
+            lastName: 'Smith',
+            status: 'member',
+            pk: 'FAMILY',
+          },
+          {
+            familyId: 'fam-2',
+            lastName: 'Smithson',
+            status: 'member',
+            pk: 'FAMILY',
+          },
+          {
+            familyId: 'fam-3',
+            lastName: 'Johnson',
+            status: 'guest',
+            pk: 'FAMILY',
+          },
+        ],
+      });
+
+      const result = await getAllFamilies({ search: 'smith' });
+
+      expect(result).toHaveLength(2); // Smith and Smithson
+      expect(result[0].lastName).toBe('Smith');
+      expect(result[1].lastName).toBe('Smithson');
+    });
+
+    it('should filter by both search and status', async () => {
+      ddbMock.on(QueryCommand).resolves({
+        Items: [
+          {
+            familyId: 'fam-1',
+            lastName: 'Smith',
+            status: 'member',
+            pk: 'FAMILY',
+          },
+          // Other families filtered by status in DynamoDB
+        ],
+      });
+
+      const result = await getAllFamilies({
+        search: 'smith',
+        status: 'member',
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].lastName).toBe('Smith');
+      expect(result[0].status).toBe('member');
+    });
+
+    it('should return empty array when no matches found', async () => {
+      ddbMock.on(QueryCommand).resolves({
+        Items: [
+          {
+            familyId: 'fam-1',
+            lastName: 'Johnson',
+            status: 'member',
+            pk: 'FAMILY',
+          },
+        ],
+      });
+
+      const result = await getAllFamilies({ search: 'nonexistent' });
+
+      expect(result).toHaveLength(0);
     });
   });
 });
