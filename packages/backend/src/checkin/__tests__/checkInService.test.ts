@@ -7,7 +7,13 @@ import {
   GetCommand,
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
-import { checkInChild, checkOutChild, getActiveCheckIns } from '../services/checkInService.js';
+import {
+  checkInChild,
+  checkOutChild,
+  getActiveCheckIns,
+  bulkCheckInChildren,
+  checkOutByPin,
+} from '../services/checkInService.js';
 
 // Create a mock DynamoDB client
 const ddbMock = mockClient(DynamoDBDocumentClient);
@@ -288,6 +294,95 @@ describe('checkInService', () => {
 
       // Act & Assert
       await expect(getActiveCheckIns()).rejects.toThrow('Failed to retrieve active check-ins');
+    });
+  });
+  describe('bulkCheckInChildren', () => {
+    it('should check in multiple children with same PIN', async () => {
+      ddbMock.on(QueryCommand).resolves({ Items: [] }); // No existing check-ins
+      ddbMock.on(PutCommand).resolves({});
+
+      const result = await bulkCheckInChildren({
+        familyId: 'fam-123',
+        childIds: ['per-456', 'per-789'],
+        room: 'Nursery',
+      });
+
+      expect(result.checkIns).toHaveLength(2);
+      expect(result.pin).toMatch(/^\d{4}$/);
+      expect(result.checkIns[0].checkOutPin).toBe(result.pin);
+      expect(result.checkIns[1].checkOutPin).toBe(result.pin);
+      expect(result.checkIns[0].familyId).toBe('fam-123');
+      expect(result.checkIns[1].familyId).toBe('fam-123');
+    });
+
+    it('should throw error if child is already checked in', async () => {
+      ddbMock
+        .on(QueryCommand)
+        .resolvesOnce({ Items: [] }) // First child not checked in
+        .resolvesOnce({ Items: [{ checkInId: 'chk-existing' }] }); // Second child already checked in
+
+      await expect(
+        bulkCheckInChildren({
+          familyId: 'fam-123',
+          childIds: ['per-456', 'per-789'],
+          room: 'Nursery',
+        })
+      ).rejects.toThrow('already checked in');
+    });
+
+    it('should throw error if childIds is empty', async () => {
+      await expect(
+        bulkCheckInChildren({
+          familyId: 'fam-123',
+          childIds: [],
+          room: 'Nursery',
+        })
+      ).rejects.toThrow('childIds (non-empty array)');
+    });
+  });
+
+  describe('checkOutByPin', () => {
+    it('should check out multiple children with same PIN', async () => {
+      const activeCheckIns = [
+        {
+          checkInId: 'chk-1',
+          childId: 'per-456',
+          checkOutPin: '4289',
+          status: 'active',
+        },
+        {
+          checkInId: 'chk-2',
+          childId: 'per-789',
+          checkOutPin: '4289',
+          status: 'active',
+        },
+        {
+          checkInId: 'chk-3',
+          childId: 'per-999',
+          checkOutPin: '5555',
+          status: 'active',
+        },
+      ];
+
+      ddbMock.on(QueryCommand).resolves({ Items: activeCheckIns });
+      ddbMock.on(UpdateCommand).resolves({});
+
+      const result = await checkOutByPin('4289');
+
+      expect(result.checkIns).toHaveLength(2);
+      expect(result.message).toContain('2 children');
+      expect(result.checkIns[0].status).toBe('completed');
+      expect(result.checkIns[1].status).toBe('completed');
+    });
+
+    it('should throw error if PIN not found', async () => {
+      ddbMock.on(QueryCommand).resolves({ Items: [] });
+
+      await expect(checkOutByPin('9999')).rejects.toThrow('No active check-ins found');
+    });
+
+    it('should throw error if PIN is invalid', async () => {
+      await expect(checkOutByPin('123')).rejects.toThrow('4-digit PIN');
     });
   });
 });

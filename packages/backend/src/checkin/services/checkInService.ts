@@ -210,3 +210,211 @@ export async function checkOutChild(checkInId: string, providedPin: string): Pro
     throw error;
   }
 }
+
+/**
+ * Checks in multiple children at once with a shared PIN.
+ *
+ * Creates multiple check-in records, all with the same PIN for easy checkout.
+ * Used for kiosk mode where parents check in multiple children together.
+ *
+ * @param data - Bulk check-in information
+ * @param data.familyId - Family ID for all children
+ * @param data.childIds - Array of child IDs to check in
+ * @param data.room - Childcare room assignment
+ *
+ * @returns Promise resolving to array of check-in records and shared PIN
+ * @throws {Error} If any child is already checked in
+ * @throws {Error} If required fields are missing
+ *
+ * @example
+ * ```typescript
+ * const result = await bulkCheckInChildren({
+ *   familyId: 'fam-123',
+ *   childIds: ['per-456', 'per-789'],
+ *   room: 'Nursery'
+ * });
+ * // Returns: { checkIns: [...], pin: '4289' }
+ * ```
+ */
+export async function bulkCheckInChildren(data: {
+  familyId: string;
+  childIds: string[];
+  room: string;
+}): Promise<{ checkIns: CheckIn[]; pin: string }> {
+  const { familyId, childIds, room } = data;
+
+  // Validation
+  if (!familyId || !childIds || childIds.length === 0 || !room) {
+    throw new Error('familyId, childIds (non-empty array), and room are required');
+  }
+
+  try {
+    // Generate ONE PIN for all children
+    const pin = generatePin();
+    const checkInTime = new Date().toISOString();
+    const checkIns: CheckIn[] = [];
+
+    // Check if any children are already checked in
+    for (const childId of childIds) {
+      const existingCheckIn = await getActiveCheckInByChild(childId);
+      if (existingCheckIn) {
+        throw new Error(`Child ${childId} is already checked in`);
+      }
+    }
+
+    // Create check-in records for each child with the same PIN
+    for (const childId of childIds) {
+      const checkInId = `chk-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      const now = new Date().toISOString();
+
+      const checkIn: CheckIn = {
+        checkInId,
+        childId,
+        familyId,
+        room,
+        checkInTime,
+        checkOutTime: null,
+        checkOutPin: pin,
+        checkOutMethod: null,
+        manualOverrideNotes: null,
+        status: 'active',
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      await dynamoDb.send(
+        new PutCommand({
+          TableName: Tables.CHECKINS,
+          Item: checkIn,
+        })
+      );
+
+      checkIns.push(checkIn);
+
+      // Small delay to ensure unique timestamps for checkInId
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+
+    return { checkIns, pin };
+  } catch (error) {
+    console.error('Error during bulk check-in:', error);
+    throw error;
+  }
+}
+
+/**
+ * Checks out all children associated with a PIN.
+ *
+ * Finds all active check-ins with the given PIN and marks them as checked out.
+ * Used for kiosk mode where one PIN checks out multiple children.
+ *
+ * @param pin - 4-digit PIN provided by parent
+ *
+ * @returns Promise resolving to array of checked-out records
+ * @throws {Error} If PIN is incorrect or no active check-ins found
+ *
+ * @example
+ * ```typescript
+ * const result = await checkOutByPin('4289');
+ * // Returns: { checkIns: [...], message: '2 children checked out' }
+ * ```
+ */
+export async function checkOutByPin(pin: string): Promise<{
+  checkIns: CheckIn[];
+  message: string;
+}> {
+  if (!pin || pin.length !== 4) {
+    throw new Error('Valid 4-digit PIN is required');
+  }
+
+  try {
+    // Get all active check-ins
+    const activeCheckIns = await getActiveCheckIns();
+
+    // Filter by PIN
+    const matchingCheckIns = activeCheckIns.filter((checkIn) => checkIn.checkOutPin === pin);
+
+    if (matchingCheckIns.length === 0) {
+      throw new Error('No active check-ins found with that PIN');
+    }
+
+    const checkOutTime = new Date().toISOString();
+    const checkedOutRecords: CheckIn[] = [];
+
+    // Check out all matching children
+    for (const checkIn of matchingCheckIns) {
+      const updatedCheckIn: CheckIn = {
+        ...checkIn,
+        checkOutTime,
+        checkOutMethod: 'pin',
+        status: 'completed',
+        updatedAt: checkOutTime,
+      };
+
+      await dynamoDb.send(
+        new UpdateCommand({
+          TableName: Tables.CHECKINS,
+          Key: {
+            checkInId: checkIn.checkInId,
+          },
+          UpdateExpression:
+            'SET checkOutTime = :checkOutTime, checkOutMethod = :checkOutMethod, #status = :status, updatedAt = :updatedAt',
+          ExpressionAttributeNames: {
+            '#status': 'status',
+          },
+          ExpressionAttributeValues: {
+            ':checkOutTime': checkOutTime,
+            ':checkOutMethod': 'pin',
+            ':status': 'completed',
+            ':updatedAt': checkOutTime,
+          },
+        })
+      );
+
+      checkedOutRecords.push(updatedCheckIn);
+    }
+
+    return {
+      checkIns: checkedOutRecords,
+      message: `${checkedOutRecords.length} ${
+        checkedOutRecords.length === 1 ? 'child' : 'children'
+      } checked out successfully`,
+    };
+  } catch (error) {
+    console.error('Error checking out by PIN:', error);
+    throw error;
+  }
+}
+
+/**
+ * Gets active check-in for a specific child.
+ * Used to prevent duplicate check-ins.
+ *
+ * @param childId - Child's person ID
+ * @returns Active check-in record or null if child not checked in
+ */
+async function getActiveCheckInByChild(childId: string): Promise<CheckIn | null> {
+  try {
+    const result = await dynamoDb.send(
+      new QueryCommand({
+        TableName: Tables.CHECKINS,
+        IndexName: 'status-checkInTime-index',
+        KeyConditionExpression: '#status = :status',
+        FilterExpression: 'childId = :childId',
+        ExpressionAttributeNames: {
+          '#status': 'status',
+        },
+        ExpressionAttributeValues: {
+          ':status': 'active',
+          ':childId': childId,
+        },
+      })
+    );
+
+    const checkIns = (result.Items || []) as CheckIn[];
+    return checkIns.length > 0 ? checkIns[0] : null;
+  } catch (error) {
+    console.error('Error checking for active check-in:', error);
+    return null;
+  }
+}

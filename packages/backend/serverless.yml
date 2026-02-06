@@ -53,6 +53,21 @@ functions:
           path: /checkin/active
           method: get
           cors: true
+  bulkCheckIn:
+    handler: src/checkin/handlers/bulkCheckIn.handler
+    events:
+      - http:
+          path: checkin/bulk
+          method: post
+          cors: true
+
+  checkOutByPin:
+    handler: src/checkin/handlers/checkOutByPin.handler
+    events:
+      - http:
+          path: checkout/pin
+          method: post
+          cors: true
 
   # ===== Family Service =====
   createFamily:
