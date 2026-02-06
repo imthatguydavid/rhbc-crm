@@ -42,12 +42,16 @@ jobs:
       - name: Build shared package
         run: yarn workspace @rhbc-crm/shared build
 
-      # Upload the built shared package as an artifact
-      - name: Upload shared build
+      # Upload entire shared package (src + dist + configs)
+      - name: Upload shared package
         uses: actions/upload-artifact@v4
         with:
-          name: shared-dist
-          path: packages/shared/dist
+          name: shared-package
+          path: |
+            packages/shared/src
+            packages/shared/dist
+            packages/shared/package.json
+            packages/shared/tsconfig.json
           retention-days: 1
 
   backend-tests:
@@ -82,12 +86,12 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
-      # Download the shared build artifact
-      - name: Download shared build
+      # Download entire shared package
+      - name: Download shared package
         uses: actions/download-artifact@v4
         with:
-          name: shared-dist
-          path: packages/shared/dist
+          name: shared-package
+          path: packages/shared
 
       - name: Run backend tests
         run: yarn workspace @rhbc-crm/backend test
@@ -127,12 +131,12 @@ jobs:
       - name: Install dependencies
         run: yarn install --immutable
 
-      # Download the shared build artifact
-      - name: Download shared build
+      # Download entire shared package
+      - name: Download shared package
         uses: actions/download-artifact@v4
         with:
-          name: shared-dist
-          path: packages/shared/dist
+          name: shared-package
+          path: packages/shared
 
       - name: Frontend type check
         run: yarn workspace @rhbc-crm/frontend type-check
