@@ -324,7 +324,7 @@ export async function bulkCheckInChildren(data: {
  * //   ],
  * //   message: '2 children checked out successfully'
  * // }
- * ```
+ */
 export async function checkOutByPin(pin: string): Promise<{
   checkIns: Array<CheckIn & { childName?: string }>;
   message: string;
