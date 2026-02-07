@@ -51,7 +51,6 @@ export function KioskGuestPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('this is sparta');
     const validationError = validateForm();
     if (validationError) {
       setError(validationError);

@@ -293,8 +293,7 @@ export async function addChildToFamily(
   }
 
   const data = await response.json();
-  console.log('Add child response:', data); // ← Add this
-  return data.person;
+  return data.child;
 }
 
 /**
