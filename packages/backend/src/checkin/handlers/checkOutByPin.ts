@@ -10,6 +10,7 @@ import { success, badRequest, serverError } from '../../shared/utils/response.js
  * Request body:
  * {
  *   pin: string;
+ *   checkedOutBy: string;
  * }
  *
  * Response: 200 OK with checked-out records
@@ -24,14 +25,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Request body is required');
     }
 
-    const { pin } = JSON.parse(event.body);
+    const { pin, checkedOutBy } = JSON.parse(event.body);
 
     if (!pin) {
       return badRequest('PIN is required');
     }
 
+    if (!checkedOutBy) {
+      return badRequest('Name of person picking up is required');
+    }
+
     // Check out by PIN
-    const result = await checkOutByPin(pin);
+    const result = await checkOutByPin(pin, checkedOutBy);
 
     return success(result);
   } catch (error) {

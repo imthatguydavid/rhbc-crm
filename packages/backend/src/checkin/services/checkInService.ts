@@ -46,7 +46,7 @@ export async function checkInChild(data: {
   familyId: string;
   room: string;
 }): Promise<{ checkIn: CheckIn; pin: string }> {
-  // NEW: Check for existing active check-in
+  // Check for existing active check-in
   const existingCheckIns = await dynamoDb.send(
     new QueryCommand({
       TableName: Tables.CHECKINS,
@@ -68,7 +68,6 @@ export async function checkInChild(data: {
     throw new Error('Child is already checked in');
   }
 
-  // Rest of the existing code...
   const checkInId = `chk-${Date.now()}-${generateRandomId()}`;
   const pin = generatePin();
   const now = new Date().toISOString();
@@ -86,6 +85,8 @@ export async function checkInChild(data: {
     room: data.room,
     createdAt: now,
     updatedAt: now,
+    checkedOutBy: null,
+    checkedOutByUserId: null,
   };
 
   await createCheckIn(checkIn);
@@ -280,6 +281,8 @@ export async function bulkCheckInChildren(data: {
         status: 'active',
         createdAt: now,
         updatedAt: now,
+        checkedOutBy: null,
+        checkedOutByUserId: null,
       };
 
       await dynamoDb.send(
@@ -310,13 +313,15 @@ export async function bulkCheckInChildren(data: {
  * Used for kiosk mode where one PIN checks out multiple children.
  *
  * @param pin - 4-digit PIN provided by parent
+ * @param checkedOutBy - Name of person picking up the children
  *
+ * @param checkedOutBy
  * @returns Promise resolving to array of checked-out records with child names and success message
  * @throws {Error} If PIN is incorrect or no active check-ins found
  *
  * @example
  * ```typescript
- * const result = await checkOutByPin('4289');
+ * const result = await checkOutByPin('4289', 'Tony Stank');
  * // Returns: {
  * //   checkIns: [
  * //     { checkInId: 'chk-1', childName: 'Emma', ... },
@@ -325,12 +330,19 @@ export async function bulkCheckInChildren(data: {
  * //   message: '2 children checked out successfully'
  * // }
  */
-export async function checkOutByPin(pin: string): Promise<{
+export async function checkOutByPin(
+  pin: string,
+  checkedOutBy: string
+): Promise<{
   checkIns: Array<CheckIn & { childName?: string }>;
   message: string;
 }> {
   if (!pin || pin.length !== 4) {
     throw new Error('Valid 4-digit PIN is required');
+  }
+
+  if (!checkedOutBy || !checkedOutBy.trim()) {
+    throw new Error('Name of person picking up is required');
   }
 
   try {
@@ -353,6 +365,8 @@ export async function checkOutByPin(pin: string): Promise<{
         ...checkIn,
         checkOutTime,
         checkOutMethod: 'pin',
+        checkedOutBy: checkedOutBy.trim(),
+        checkedOutByUserId: null,
         status: 'completed',
         updatedAt: checkOutTime,
       };
@@ -364,13 +378,15 @@ export async function checkOutByPin(pin: string): Promise<{
             checkInId: checkIn.checkInId,
           },
           UpdateExpression:
-            'SET checkOutTime = :checkOutTime, checkOutMethod = :checkOutMethod, #status = :status, updatedAt = :updatedAt',
+            'SET checkOutTime = :checkOutTime, checkOutMethod = :checkOutMethod, checkedOutBy = :checkedOutBy, checkedOutByUserId = :checkedOutByUserId, #status = :status, updatedAt = :updatedAt',
           ExpressionAttributeNames: {
             '#status': 'status',
           },
           ExpressionAttributeValues: {
             ':checkOutTime': checkOutTime,
             ':checkOutMethod': 'pin',
+            ':checkedOutBy': checkedOutBy.trim(),
+            ':checkedOutByUserId': null,
             ':status': 'completed',
             ':updatedAt': checkOutTime,
           },
