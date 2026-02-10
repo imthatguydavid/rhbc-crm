@@ -1,7 +1,7 @@
-import type { CheckIn } from '@rhbc-crm/shared';
+import type { EnrichedCheckIn } from '@/types';
 
 interface CheckInCardProps {
-  checkIn: CheckIn & { childName?: string; familyName?: string };
+  checkIn: EnrichedCheckIn;
 }
 
 export function CheckInCard({ checkIn }: CheckInCardProps) {

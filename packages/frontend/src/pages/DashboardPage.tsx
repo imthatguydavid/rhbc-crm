@@ -4,13 +4,11 @@ import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ActiveCheckInsList } from '@/components/dashboard/ActiveCheckInsList';
 import { getActiveCheckIns, getFamilyById } from '@/utils/api';
-import type { CheckIn } from '@rhbc-crm/shared';
+import type { EnrichedCheckIn } from '@/types';
 
 export function DashboardPage() {
   const navigate = useNavigate();
-  const [checkIns, setCheckIns] = useState<
-    Array<CheckIn & { childName?: string; familyName?: string }>
-  >([]);
+  const [checkIns, setCheckIns] = useState<EnrichedCheckIn[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {

@@ -4,6 +4,7 @@ import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ActiveCheckInsTable } from '@/components/checkins/ActiveCheckInsTable';
+import { HistoryCheckInsTable } from '@/components/checkins/HistoryCheckInsTable';
 
 export function CheckInsPage() {
   const navigate = useNavigate();
@@ -37,7 +38,7 @@ export function CheckInsPage() {
         </TabsContent>
 
         <TabsContent value="history" className="mt-6">
-          <p className="text-slate-600">History table coming soon...</p>
+          <HistoryCheckInsTable />
         </TabsContent>
       </Tabs>
     </div>

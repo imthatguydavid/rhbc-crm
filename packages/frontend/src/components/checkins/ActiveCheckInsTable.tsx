@@ -25,12 +25,7 @@ import {
   EmptyContent,
 } from '@/components/ui/empty';
 import { getActiveCheckIns, getFamilyById } from '@/utils/api';
-import type { CheckIn } from '@rhbc-crm/shared';
-
-type EnrichedCheckIn = CheckIn & {
-  childName?: string;
-  familyName?: string;
-};
+import type { EnrichedCheckIn } from '@/types';
 
 /**
  * Active Check-Ins Table Component
@@ -94,7 +89,7 @@ export function ActiveCheckInsTable() {
    * Handles check-out with PIN verification.
    * TODO: Implement PIN verification dialog
    */
-  const handleCheckOut = (checkIn: CheckIn) => {
+  const handleCheckOut = (checkIn: EnrichedCheckIn) => {
     console.log('Check out:', checkIn);
     // TODO: Open PIN verification dialog
   };
@@ -103,7 +98,7 @@ export function ActiveCheckInsTable() {
    * Handles manual override checkout (emergency situations).
    * TODO: Implement manual override dialog with notes
    */
-  const handleManualOverride = (checkIn: CheckIn) => {
+  const handleManualOverride = (checkIn: EnrichedCheckIn) => {
     console.log('Manual override:', checkIn);
     // TODO: Open manual override dialog
   };

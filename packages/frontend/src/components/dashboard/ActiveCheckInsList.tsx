@@ -11,7 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { CheckIn } from '@rhbc-crm/shared';
 import { CheckInCard } from './CheckInCard';
 import {
   Empty,
@@ -22,9 +21,10 @@ import {
   EmptyContent,
 } from '@/components/ui/empty';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { EnrichedCheckIn } from '@/types';
 
 interface ActiveCheckInsListProps {
-  checkIns: Array<CheckIn & { childName?: string; familyName?: string }>;
+  checkIns: EnrichedCheckIn[];
   isLoading?: boolean;
 }
 
