@@ -13,6 +13,7 @@ import {
   getActiveCheckIns,
   bulkCheckInChildren,
   checkOutByPin,
+  validatePinForCheckout,
 } from '../services/checkInService.js';
 
 // Create a mock DynamoDB client
@@ -367,7 +368,7 @@ describe('checkInService', () => {
       ddbMock.on(QueryCommand).resolves({ Items: activeCheckIns });
       ddbMock.on(UpdateCommand).resolves({});
 
-      const result = await checkOutByPin('4289');
+      const result = await checkOutByPin('4289', 'Peter Parker');
 
       expect(result.checkIns).toHaveLength(2);
       expect(result.message).toContain('2 children');
@@ -378,11 +379,45 @@ describe('checkInService', () => {
     it('should throw error if PIN not found', async () => {
       ddbMock.on(QueryCommand).resolves({ Items: [] });
 
-      await expect(checkOutByPin('9999')).rejects.toThrow('No active check-ins found');
+      await expect(checkOutByPin('9999', 'Eddie Brock')).rejects.toThrow(
+        'No active check-ins found'
+      );
     });
 
     it('should throw error if PIN is invalid', async () => {
-      await expect(checkOutByPin('123')).rejects.toThrow('4-digit PIN');
+      await expect(checkOutByPin('123', 'Saja Boys')).rejects.toThrow('4-digit PIN');
+    });
+  });
+  describe('validatePinForCheckout', () => {
+    it('should throw error for invalid PIN format (too short)', async () => {
+      await expect(validatePinForCheckout('123')).rejects.toThrow('4-digit PIN');
+    });
+
+    it('should throw error for empty PIN', async () => {
+      await expect(validatePinForCheckout('')).rejects.toThrow('4-digit PIN');
+    });
+
+    it('should throw error if no active check-ins found with PIN', async () => {
+      ddbMock.on(QueryCommand).resolves({ Items: [] });
+
+      await expect(validatePinForCheckout('9999')).rejects.toThrow('No active check-ins found');
+    });
+
+    it('should throw error if family not found', async () => {
+      const activeCheckIns = [
+        {
+          checkInId: 'chk-1',
+          childId: 'per-child-1',
+          familyId: 'fam-nonexistent',
+          checkOutPin: '4289',
+          status: 'active',
+        },
+      ];
+
+      ddbMock.on(QueryCommand).resolves({ Items: activeCheckIns });
+      ddbMock.on(GetCommand).resolves({}); // No family found
+
+      await expect(validatePinForCheckout('4289')).rejects.toThrow('Family not found');
     });
   });
 });

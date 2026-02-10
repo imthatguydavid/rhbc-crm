@@ -69,6 +69,14 @@ functions:
           method: post
           cors: true
 
+  validatePinForCheckout:
+    handler: src/checkin/handlers/validatePinForCheckout.handler
+    events:
+      - http:
+          path: checkout/pin/validate
+          method: post
+          cors: true
+
   # ===== Family Service =====
   createFamily:
     handler: src/family/handlers/createFamily.handler

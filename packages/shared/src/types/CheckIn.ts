@@ -128,5 +128,29 @@ export interface CheckIn {
    */
   updatedAt: string;
 
+  /**
+   * Name of the person who picked up the child.
+   * Captured during checkout for accountability and safety.
+   *
+   * - Kiosk checkout: Parent/guardian enters their name
+   * - Admin checkout: Logged-in user's name (future feature)
+   * - Null if child not yet checked out
+   *
+   * @example "Sarah Johnson"
+   * @example "John Kim"
+   * @example null  // Still checked in
+   */
+  checkedOutBy: string | null;
 
+  /**
+   * User ID of admin who performed checkout.
+   * Only populated for manual admin checkouts.
+   * Null for kiosk self-service checkouts or if not yet checked out.
+   *
+   * Future feature when Cognito authentication is added.
+   *
+   * @example "user-abc123"
+   * @example null
+   */
+  checkedOutByUserId: string | null;
 }

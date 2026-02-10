@@ -431,8 +431,26 @@ export async function bulkCheckInChildren(data: {
  * Check out all children with a PIN.
  * Used for kiosk mode where one PIN checks out multiple kids.
  */
-export async function checkOutByPin(pin: string) {
+export async function checkOutByPin(pin: string, checkedOutBy: string) {
   const response = await fetch(getApiUrl('/checkout/pin'), {
+    ...API_CONFIG,
+    method: 'POST',
+    body: JSON.stringify({ pin, checkedOutBy }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || `Failed to check out: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
+
+/**
+ * Validate PIN and get family info for checkout selection.
+ */
+export async function validatePinForCheckout(pin: string) {
+  const response = await fetch(getApiUrl('/checkout/pin/validate'), {
     ...API_CONFIG,
     method: 'POST',
     body: JSON.stringify({ pin }),
@@ -440,7 +458,7 @@ export async function checkOutByPin(pin: string) {
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error || `Failed to check out: ${response.statusText}`);
+    throw new Error(error.error || `Failed to validate PIN: ${response.statusText}`);
   }
 
   return await response.json();
