@@ -431,11 +431,11 @@ export async function bulkCheckInChildren(data: {
  * Check out all children with a PIN.
  * Used for kiosk mode where one PIN checks out multiple kids.
  */
-export async function checkOutByPin(pin: string) {
+export async function checkOutByPin(pin: string, checkedOutBy: string) {
   const response = await fetch(getApiUrl('/checkout/pin'), {
     ...API_CONFIG,
     method: 'POST',
-    body: JSON.stringify({ pin }),
+    body: JSON.stringify({ pin, checkedOutBy }),
   });
 
   if (!response.ok) {

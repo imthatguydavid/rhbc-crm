@@ -4,9 +4,10 @@ import { useEffect } from 'react';
 interface CheckOutSuccessProps {
   children: Array<{ childName?: string }>;
   message: string;
+  checkedOutBy: string;
 }
 
-export function CheckOutSuccess({ children, message }: CheckOutSuccessProps) {
+export function CheckOutSuccess({ children, message, checkedOutBy }: CheckOutSuccessProps) {
   const navigate = useNavigate();
 
   // Auto-return to home after 8 seconds
@@ -25,6 +26,9 @@ export function CheckOutSuccess({ children, message }: CheckOutSuccessProps) {
           <div className="text-9xl mb-6">✓</div>
           <h1 className="text-6xl font-bold text-green-700 mb-4">Check-Out Successful!</h1>
           <p className="text-3xl text-slate-700 mb-8">{message}</p>
+          <p className="text-2xl text-slate-600">
+            Picked up by: <span className="font-semibold">{checkedOutBy}</span>
+          </p>
 
           {/* Child Names */}
           <div className="bg-white rounded-3xl shadow-xl p-8 mb-8">
