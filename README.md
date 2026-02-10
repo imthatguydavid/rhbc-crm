@@ -211,8 +211,7 @@ rhbc-crm/
 │   │   │   │   ├── FamilyDetails.tsx
 │   │   │   │   ├── AddFamilyDialog.tsx
 │   │   │   │   └── StatsCard.tsx
-│   │   │   ├── data/
-│   │   │   │   └── mockData.ts    # Development mock data
+│   │   │   ├── data
 │   │   │   ├── App.tsx
 │   │   │   ├── main.tsx
 │   │   │   └── index.css
