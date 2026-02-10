@@ -445,3 +445,21 @@ export async function checkOutByPin(pin: string, checkedOutBy: string) {
 
   return await response.json();
 }
+
+/**
+ * Validate PIN and get family info for checkout selection.
+ */
+export async function validatePinForCheckout(pin: string) {
+  const response = await fetch(getApiUrl('/checkout/pin/validate'), {
+    ...API_CONFIG,
+    method: 'POST',
+    body: JSON.stringify({ pin }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || `Failed to validate PIN: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
