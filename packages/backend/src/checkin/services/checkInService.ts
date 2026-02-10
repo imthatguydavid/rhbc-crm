@@ -1,6 +1,7 @@
 import { PutCommand, GetCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import type { CheckIn, Person } from '@rhbc-crm/shared';
+import type { CheckIn, Person, Family } from '@rhbc-crm/shared';
 import { dynamoDb, Tables } from '../../shared/utils/dynamodb';
+import { getPeopleByFamily } from '../../family/services/familyService';
 
 /**
  * Generates a random 6-character alphanumeric string for IDs
@@ -457,5 +458,101 @@ async function getActiveCheckInByChild(childId: string): Promise<CheckIn | null>
   } catch (error) {
     console.error('Error checking for active check-in:', error);
     return null;
+  }
+}
+
+/**
+ * Validates a PIN and returns family information for checkout.
+ *
+ * Checks if the PIN is valid and returns the family details including
+ * parent names and children being picked up. Does NOT perform the actual checkout.
+ * Used in kiosk flow to show parent selection before checkout.
+ *
+ * @param pin - 4-digit PIN to validate
+ *
+ * @returns Promise resolving to family info and children to be picked up
+ * @throws {Error} If PIN is invalid or no active check-ins found
+ *
+ * @example
+ * ```typescript
+ * const result = await validatePinForCheckout('4289');
+ * // Returns: {
+ * //   familyId: 'fam-123',
+ * //   lastName: 'Johnson',
+ * //   children: [{ personId: 'per-456', firstName: 'Emma' }, ...],
+ * //   parents: [{ personId: 'per-789', firstName: 'Sarah' }, ...]
+ * // }
+ * ```
+ */
+export async function validatePinForCheckout(pin: string): Promise<{
+  familyId: string;
+  lastName: string;
+  children: Array<{ personId: string; firstName: string }>;
+  parents: Array<{ personId: string; firstName: string }>;
+}> {
+  if (!pin || pin.length !== 4) {
+    throw new Error('Valid 4-digit PIN is required');
+  }
+
+  try {
+    // Get all active check-ins
+    const activeCheckIns = await getActiveCheckIns();
+
+    // Filter by PIN
+    const matchingCheckIns = activeCheckIns.filter((checkIn) => checkIn.checkOutPin === pin);
+
+    if (matchingCheckIns.length === 0) {
+      throw new Error('No active check-ins found with that PIN');
+    }
+
+    // All check-ins for same PIN should have same familyId
+    const familyId = matchingCheckIns[0].familyId;
+
+    // Get family details
+    const familyResult = await dynamoDb.send(
+      new GetCommand({
+        TableName: Tables.FAMILIES,
+        Key: {
+          familyId,
+        },
+      })
+    );
+
+    const family = familyResult.Item as Family | undefined;
+    if (!family) {
+      throw new Error('Family not found');
+    }
+
+    // Get all family members
+    const people = await getPeopleByFamily(familyId);
+
+    // Get children info from check-ins
+    const children = await Promise.all(
+      matchingCheckIns.map(async (checkIn) => {
+        const child = people.find((p) => p.personId === checkIn.childId);
+        return {
+          personId: checkIn.childId,
+          firstName: child?.firstName || 'Unknown',
+        };
+      })
+    );
+
+    // Get parents
+    const parents = people
+      .filter((p) => p.role === 'parent')
+      .map((p) => ({
+        personId: p.personId,
+        firstName: p.firstName,
+      }));
+
+    return {
+      familyId,
+      lastName: family.lastName,
+      children,
+      parents,
+    };
+  } catch (error) {
+    console.error('Error validating PIN for checkout:', error);
+    throw error;
   }
 }
