@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Search } from 'lucide-react';
 import type { Family, Person } from '@rhbc-crm/shared';
-import { FamilyList } from '@/components/FamilyList';
-import { FamilyDetails } from '@/components/FamilyDetails';
-import { AddFamilyDialog } from '@/components/AddFamilyDialog';
-import { StatsCard } from '@/components/StatsCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -13,7 +11,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Search } from 'lucide-react';
+import { FamiliesTable } from '@/components/families/FamiliesTable';
+import { FamilyDetails } from '@/components/FamilyDetails';
+import { AddFamilyDialog } from '@/components/AddFamilyDialog';
 import {
   searchFamilies,
   createFamily,
@@ -25,9 +25,14 @@ import {
 } from '@/utils/api';
 
 export function FamiliesPage() {
+  const navigate = useNavigate();
+
+  // Data state
   const [families, setFamilies] = useState<Family[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
   const [selectedFamily, setSelectedFamily] = useState<Family | null>(null);
+
+  // UI state
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,13 +42,15 @@ export function FamiliesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'member' | 'guest'>('all');
 
-  // Load families on mount and when filters change
+  /**
+   * Load families on mount and when filters change
+   */
   useEffect(() => {
     loadFamilies();
   }, [searchTerm, statusFilter]);
 
   /**
-   * Loads families with current search/filter settings
+   * Fetches families with current search/filter settings
    */
   async function loadFamilies() {
     try {
@@ -66,12 +73,8 @@ export function FamiliesPage() {
     }
   }
 
-  // Calculate stats
-  const memberFamilies = families.filter((f) => f.status === 'member');
-  const guestFamilies = families.filter((f) => f.status === 'guest');
-
   /**
-   * Handles viewing a family's details
+   * Opens family details dialog and loads family members
    */
   async function handleViewDetails(family: Family) {
     try {
@@ -87,13 +90,16 @@ export function FamiliesPage() {
     }
   }
 
+  /**
+   * Closes details dialog
+   */
   const handleCloseDetails = () => {
     setIsDetailsOpen(false);
     setTimeout(() => setSelectedFamily(null), 200);
   };
 
   /**
-   * Handles adding a new family via API
+   * Creates a new family via API
    */
   async function handleAddFamily(
     family: Family,
@@ -102,7 +108,6 @@ export function FamiliesPage() {
     try {
       setError(null);
 
-      // Create family via API
       await createFamily({
         lastName: family.lastName,
         status: family.status,
@@ -113,7 +118,6 @@ export function FamiliesPage() {
 
       // Reload families to show new one
       await loadFamilies();
-
       setIsAddDialogOpen(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create family');
@@ -122,7 +126,7 @@ export function FamiliesPage() {
   }
 
   /**
-   * Handles updating a family
+   * Updates family information
    */
   async function handleUpdateFamily(
     familyId: string,
@@ -146,7 +150,7 @@ export function FamiliesPage() {
   }
 
   /**
-   * Handles updating a person
+   * Updates person information
    */
   async function handleUpdatePerson(
     personId: string,
@@ -168,7 +172,7 @@ export function FamiliesPage() {
   }
 
   /**
-   * Handles adding a child to a family
+   * Adds a child to the family
    */
   async function handleAddChild(
     familyId: string,
@@ -188,7 +192,7 @@ export function FamiliesPage() {
   }
 
   /**
-   * Handles deleting a person
+   * Deletes a person from the family
    */
   async function handleDeletePerson(personId: string) {
     try {
@@ -206,109 +210,111 @@ export function FamiliesPage() {
     }
   }
 
-  if (isLoading && families.length === 0) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-slate-600">Loading families...</p>
-        </div>
-      </div>
-    );
-  }
+  /**
+   * Opens add child dialog for a specific family
+   */
+  const handleAddChildFromMenu = async (family: Family) => {
+    // Open details first, then trigger add child
+    await handleViewDetails(family);
+    // TODO: Trigger add child action in FamilyDetails dialog
+  };
+
+  /**
+   * Deletes an entire family
+   */
+  const handleDeleteFamily = async (family: Family) => {
+    if (!confirm(`Are you sure you want to delete the ${family.lastName} family?`)) {
+      return;
+    }
+
+    try {
+      setError(null);
+      // TODO: Implement deleteFamily API call
+      console.log('Delete family:', family);
+      // await deleteFamily(family.familyId);
+      // await loadFamilies();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete family');
+      console.error('Error deleting family:', err);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="border-b bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900">RHBC CRM</h1>
-              <p className="mt-1 text-sm text-slate-600">Church Management System</p>
-            </div>
-            <Button onClick={() => setIsAddDialogOpen(true)}>Add Family</Button>
-          </div>
-        </div>
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-slate-900">Families</h1>
+        <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
+          <Plus className="h-4 w-4" />
+          New Family
+        </Button>
       </div>
 
-      {/* Main Content */}
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="space-y-8">
-          {/* Error Message */}
-          {error && (
-            <div className="rounded-md bg-red-50 p-4 border border-red-200">
-              <div className="flex justify-between items-start">
-                <p className="text-sm text-red-800">{error}</p>
-                <button
-                  onClick={() => setError(null)}
-                  className="text-red-600 hover:text-red-800 font-bold"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Stats */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <StatsCard title="Total Families" value={families.length} />
-            <StatsCard title="Member Families" value={memberFamilies.length} />
-            <StatsCard title="Guest Families" value={guestFamilies.length} />
-          </div>
-
-          {/* Search and Filters */}
-          <div className="flex gap-4 items-center">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder="Search by last name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Select
-              value={statusFilter}
-              onValueChange={(value: 'all' | 'member' | 'guest') => setStatusFilter(value)}
+      {/* Error Message */}
+      {error && (
+        <div className="rounded-lg bg-red-50 p-4 border border-red-200">
+          <div className="flex justify-between items-start">
+            <p className="text-sm text-red-800">{error}</p>
+            <button
+              onClick={() => setError(null)}
+              className="text-red-600 hover:text-red-800 font-bold"
             >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Families</SelectItem>
-                <SelectItem value="member">Members Only</SelectItem>
-                <SelectItem value="guest">Guests Only</SelectItem>
-              </SelectContent>
-            </Select>
-            {(searchTerm || statusFilter !== 'all') && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSearchTerm('');
-                  setStatusFilter('all');
-                }}
-              >
-                Clear Filters
-              </Button>
-            )}
-          </div>
-
-          {/* Family List */}
-          <div>
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-2xl font-semibold text-slate-900">Families</h2>
-              <div className="text-sm text-slate-600">
-                {families.length} {families.length === 1 ? 'family' : 'families'}
-                {(searchTerm || statusFilter !== 'all') && (
-                  <span className="text-slate-500"> (filtered)</span>
-                )}
-              </div>
-            </div>
-            <FamilyList families={families} onViewDetails={handleViewDetails} />
+              ✕
+            </button>
           </div>
         </div>
+      )}
+
+      {/* Search and Filters */}
+      <div className="flex gap-4 items-center">
+        {/* Search Input */}
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="Search by last name..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
+        {/* Status Filter */}
+        <Select
+          value={statusFilter}
+          onValueChange={(value: 'all' | 'member' | 'guest') => setStatusFilter(value)}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filter by status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Families</SelectItem>
+            <SelectItem value="member">Members Only</SelectItem>
+            <SelectItem value="guest">Guests Only</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Clear Filters */}
+        {(searchTerm || statusFilter !== 'all') && (
+          <Button
+            variant="outline"
+            onClick={() => {
+              setSearchTerm('');
+              setStatusFilter('all');
+            }}
+          >
+            Clear Filters
+          </Button>
+        )}
       </div>
+
+      {/* Families Table */}
+      <FamiliesTable
+        families={families}
+        isLoading={isLoading}
+        onViewDetails={handleViewDetails}
+        onAddChild={handleAddChildFromMenu}
+        onDelete={handleDeleteFamily}
+      />
 
       {/* Dialogs */}
       <FamilyDetails
