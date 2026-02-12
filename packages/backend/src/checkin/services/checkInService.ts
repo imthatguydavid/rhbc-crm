@@ -556,3 +556,108 @@ export async function validatePinForCheckout(pin: string): Promise<{
     throw error;
   }
 }
+
+/**
+ * Admin checkout - staff checks out a child without PIN.
+ *
+ * Staff have authority to check out any child. This bypasses PIN verification.
+ * Records who performed the checkout for audit trail.
+ *
+ * @param checkInId - Check-in ID to checkout
+ * @param checkedOutBy - Name of person picking up the child
+ * @param adminUserId - Optional: ID of admin who performed checkout (for future Cognito integration)
+ *
+ * @returns Promise resolving to updated check-in record with child name
+ * @throws {Error} If check-in not found or already checked out
+ *
+ * @example
+ * ```typescript
+ * const result = await adminCheckOut('chk-123', 'Sarah Johnson');
+ * // Returns: { checkIn: {..., checkedOutBy: 'Sarah Johnson', ...}, childName: 'Emma' }
+ * ```
+ */
+export async function adminCheckOut(
+  checkInId: string,
+  checkedOutBy: string,
+  adminUserId?: string
+): Promise<{ checkIn: CheckIn; childName?: string }> {
+  if (!checkedOutBy || !checkedOutBy.trim()) {
+    throw new Error('Name of person picking up is required');
+  }
+
+  try {
+    // Get the check-in record
+    const getResult = await dynamoDb.send(
+      new GetCommand({
+        TableName: Tables.CHECKINS,
+        Key: { checkInId },
+      })
+    );
+
+    if (!getResult.Item) {
+      throw new Error('Check-in not found');
+    }
+
+    const checkIn = getResult.Item as CheckIn;
+
+    // Check if already checked out
+    if (checkIn.status === 'completed') {
+      throw new Error('Child already checked out');
+    }
+
+    // Update check-out time and status
+    const now = new Date().toISOString();
+    const updatedCheckIn: CheckIn = {
+      ...checkIn,
+      checkOutTime: now,
+      checkOutMethod: 'manual_override',
+      checkedOutBy: checkedOutBy.trim(),
+      checkedOutByUserId: adminUserId || null,
+      status: 'completed',
+      updatedAt: now,
+    };
+
+    await dynamoDb.send(
+      new UpdateCommand({
+        TableName: Tables.CHECKINS,
+        Key: { checkInId },
+        UpdateExpression:
+          'SET checkOutTime = :checkOutTime, checkOutMethod = :checkOutMethod, checkedOutBy = :checkedOutBy, checkedOutByUserId = :checkedOutByUserId, #status = :status, updatedAt = :updatedAt',
+        ExpressionAttributeNames: {
+          '#status': 'status',
+        },
+        ExpressionAttributeValues: {
+          ':checkOutTime': now,
+          ':checkOutMethod': 'pin',
+          ':checkedOutBy': checkedOutBy.trim(),
+          ':checkedOutByUserId': adminUserId || null,
+          ':status': 'completed',
+          ':updatedAt': now,
+        },
+      })
+    );
+
+    // Fetch child name
+    let childName: string | undefined;
+    try {
+      const personResult = await dynamoDb.send(
+        new GetCommand({
+          TableName: Tables.PEOPLE,
+          Key: { personId: checkIn.childId },
+        })
+      );
+      const child = personResult.Item as Person | undefined;
+      childName = child?.firstName;
+    } catch (error) {
+      console.error(`Error fetching child name for ${checkIn.childId}:`, error);
+    }
+
+    return {
+      checkIn: updatedCheckIn,
+      childName,
+    };
+  } catch (error) {
+    console.error('Error in admin checkout:', error);
+    throw error;
+  }
+}
