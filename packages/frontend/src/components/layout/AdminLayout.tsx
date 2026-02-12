@@ -95,11 +95,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <AppSidebar />
 
         <SidebarInset className="flex-1">
-          <header className="flex h-16 items-center gap-4 border-b bg-background px-6">
-            {/* Future: Breadcrumbs will go here */}
-            <div className="flex-1" />
-            {/* Future: User menu, notifications, etc. */}
-          </header>
+          {/*<header className="flex h-16 items-center gap-4 border-b bg-background px-6">*/}
+          {/*  <div className="flex-1" />*/}
+          {/*  /!* Future: User menu, notifications, etc. *!/*/}
+          {/*</header>*/}
           <main className="flex-1 p-6">{children}</main>
         </SidebarInset>
       </div>
