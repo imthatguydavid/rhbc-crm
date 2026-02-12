@@ -2,14 +2,10 @@ import { useState, useEffect } from 'react';
 import type { CheckIn, Person } from '@rhbc-crm/shared';
 import { getActiveCheckIns, checkOutChild, getFamilyById } from '../utils/api';
 import { Button } from '../components/ui/button';
-
-interface CheckInWithChild extends CheckIn {
-  childName?: string;
-  familyName?: string;
-}
+import type { EnrichedCheckIn } from '@/types';
 
 export function ActiveCheckInsPage() {
-  const [checkIns, setCheckIns] = useState<CheckInWithChild[]>([]);
+  const [checkIns, setCheckIns] = useState<EnrichedCheckIn[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [checkingOut, setCheckingOut] = useState<string | null>(null);
@@ -59,7 +55,7 @@ export function ActiveCheckInsPage() {
     }
   }
 
-  async function handleQuickCheckOut(checkIn: CheckInWithChild) {
+  async function handleQuickCheckOut(checkIn: EnrichedCheckIn) {
     if (!confirm(`Check out ${checkIn.childName}? PIN: ${checkIn.checkOutPin}`)) {
       return;
     }
@@ -87,7 +83,7 @@ export function ActiveCheckInsPage() {
     return date.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
-      hour12: true
+      hour12: true,
     });
   }
 
@@ -121,9 +117,7 @@ export function ActiveCheckInsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-slate-900">
-            Active Check-Ins
-          </h2>
+          <h2 className="text-2xl font-semibold text-slate-900">Active Check-Ins</h2>
           <p className="mt-1 text-sm text-slate-600">
             {checkIns.length} {checkIns.length === 1 ? 'child' : 'children'} currently checked in
           </p>
@@ -143,12 +137,8 @@ export function ActiveCheckInsPage() {
       {checkIns.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-12 text-center">
           <div className="text-6xl mb-4">👶</div>
-          <h3 className="text-xl font-semibold text-slate-900 mb-2">
-            No Children Checked In
-          </h3>
-          <p className="text-slate-600">
-            All children have been picked up!
-          </p>
+          <h3 className="text-xl font-semibold text-slate-900 mb-2">No Children Checked In</h3>
+          <p className="text-slate-600">All children have been picked up!</p>
         </div>
       ) : (
         <div className="grid gap-4">
@@ -170,7 +160,8 @@ export function ActiveCheckInsPage() {
 
                   <div className="space-y-1 text-sm text-slate-600">
                     <p>
-                      Checked in: {formatTime(checkIn.checkInTime)} ({getTimeElapsed(checkIn.checkInTime)})
+                      Checked in: {formatTime(checkIn.checkInTime)} (
+                      {getTimeElapsed(checkIn.checkInTime)})
                     </p>
                     <p className="font-mono text-lg font-semibold text-slate-900">
                       PIN: {checkIn.checkOutPin}

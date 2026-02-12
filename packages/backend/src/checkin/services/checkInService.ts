@@ -235,7 +235,7 @@ export async function checkOutChild(checkInId: string, providedPin: string): Pro
  *   childIds: ['per-456', 'per-789'],
  *   room: 'Nursery'
  * });
- * // Returns: { checkIns: [...], pin: '4289' }
+ * // Returns: { checkins: [...], pin: '4289' }
  * ```
  */
 export async function bulkCheckInChildren(data: {
@@ -324,7 +324,7 @@ export async function bulkCheckInChildren(data: {
  * ```typescript
  * const result = await checkOutByPin('4289', 'Tony Stank');
  * // Returns: {
- * //   checkIns: [
+ * //   checkins: [
  * //     { checkInId: 'chk-1', childName: 'Emma', ... },
  * //     { checkInId: 'chk-2', childName: 'Noah', ... }
  * //   ],

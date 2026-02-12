@@ -16,7 +16,7 @@ import { success, serverError } from '../../shared/utils/response';
  *
  * Returns:
  * {
- *   "checkIns": [
+ *   "checkins": [
  *     {
  *       "checkInId": "chk-123",
  *       "childId": "per-456",
