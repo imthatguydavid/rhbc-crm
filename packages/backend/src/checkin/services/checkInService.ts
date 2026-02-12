@@ -61,7 +61,6 @@ export async function checkInChild(data: {
         ':status': 'active',
         ':childId': data.childId,
       },
-      Limit: 1, // We only need to know if one exists
     })
   );
 

@@ -11,6 +11,7 @@
   "packageManager": "yarn@4.12.0",
   "scripts": {
     "frontend": "yarn workspace @rhbc-crm/frontend dev",
+    "frontend:check": "yarn workspace @rhbc-crm/frontend type-check",
     "install:all": "yarn install",
     "clean": "rm -rf node_modules packages/*/node_modules",
     "backend": "yarn workspace @rhbc-crm/backend dev",

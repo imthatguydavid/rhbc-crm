@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ActiveCheckInsList } from '@/components/dashboard/ActiveCheckInsList';
 import { getActiveCheckIns, getFamilyById } from '@/utils/api';
 import type { EnrichedCheckIn } from '@/types';
+import { NewFamilyButton } from '@/components/families/NewFamilyButton';
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -60,10 +61,7 @@ export function DashboardPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
         <div className="flex items-center gap-3">
-          <Button onClick={() => navigate('/families/new')} className="gap-2">
-            <Plus className="h-4 w-4" />
-            New Family
-          </Button>
+          <NewFamilyButton />
           <Button onClick={() => navigate('/checkins/new')} variant="outline" className="gap-2">
             <Plus className="h-4 w-4" />
             Manual Check In

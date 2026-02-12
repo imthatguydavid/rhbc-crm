@@ -9,7 +9,6 @@ import type { Family, Person } from '@rhbc-crm/shared';
 interface ReviewStepProps {
   family: Family;
   child: Person;
-  onConfirm: (pin: string) => void;
   onBack: () => void;
 }
 
@@ -19,18 +18,10 @@ interface ReviewStepProps {
  * Step 4 of manual check-in flow.
  * Staff reviews details, generates PIN, and confirms check-in.
  */
-export function ReviewStep({ family, child, onConfirm, onBack }: ReviewStepProps) {
+export function ReviewStep({ family, child, onBack }: ReviewStepProps) {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [generatedPin, setGeneratedPin] = useState<string>('');
-
-  /**
-   * Generates a random 4-digit PIN
-   */
-  const generatePin = () => {
-    return Math.floor(1000 + Math.random() * 9000).toString();
-  };
 
   /**
    * Handles check-in confirmation
@@ -39,16 +30,11 @@ export function ReviewStep({ family, child, onConfirm, onBack }: ReviewStepProps
     try {
       setIsSubmitting(true);
 
-      // Generate PIN
-      const pin = generatePin();
-
       // Call check-in API
       await checkInChild({ familyId: family.familyId, childId: child.personId, room: 'nursery' });
 
       // Success!
-      setGeneratedPin(pin);
       setIsSuccess(true);
-      onConfirm(pin);
 
       toast.success(`${child.firstName} checked in successfully!`);
 
@@ -78,7 +64,6 @@ export function ReviewStep({ family, child, onConfirm, onBack }: ReviewStepProps
         <div className="max-w-sm mx-auto mb-6">
           <div className="rounded-lg bg-blue-50 border-2 border-blue-200 p-6">
             <p className="text-sm font-medium text-blue-900 mb-2">Checkout PIN</p>
-            <p className="text-4xl font-bold text-blue-600 tracking-widest">{generatedPin}</p>
             <p className="text-xs text-blue-700 mt-2">Give this PIN to the parent for checkout</p>
           </div>
         </div>

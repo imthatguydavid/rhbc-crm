@@ -53,13 +53,6 @@ export function ManualCheckInPage() {
   };
 
   /**
-   * Step 3: Check-in confirmed
-   */
-  const handleConfirm = (generatedPin: string) => {
-    // Success handled in ReviewStep
-  };
-
-  /**
    * Go back one step
    */
   const handleBack = () => {
@@ -136,12 +129,7 @@ export function ManualCheckInPage() {
 
           {/* Step 3: Review & Confirm */}
           {currentStep === 'review' && selectedFamily && selectedChild && (
-            <ReviewStep
-              family={selectedFamily}
-              child={selectedChild}
-              onConfirm={handleConfirm}
-              onBack={handleBack}
-            />
+            <ReviewStep family={selectedFamily} child={selectedChild} onBack={handleBack} />
           )}
         </CardContent>
       </Card>
