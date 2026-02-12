@@ -599,7 +599,6 @@ export async function adminCheckOut(
     }
 
     const checkIn = getResult.Item as CheckIn;
-
     // Check if already checked out
     if (checkIn.status === 'completed') {
       throw new Error('Child already checked out');
@@ -627,12 +626,12 @@ export async function adminCheckOut(
           '#status': 'status',
         },
         ExpressionAttributeValues: {
-          ':checkOutTime': now,
-          ':checkOutMethod': 'pin',
-          ':checkedOutBy': checkedOutBy.trim(),
-          ':checkedOutByUserId': adminUserId || null,
-          ':status': 'completed',
-          ':updatedAt': now,
+          ':checkOutTime': updatedCheckIn.checkOutTime,
+          ':checkOutMethod': updatedCheckIn.checkOutMethod,
+          ':checkedOutBy': updatedCheckIn.checkedOutBy,
+          ':checkedOutByUserId': updatedCheckIn.checkedOutByUserId,
+          ':status': updatedCheckIn.status,
+          ':updatedAt': updatedCheckIn.updatedAt,
         },
       })
     );

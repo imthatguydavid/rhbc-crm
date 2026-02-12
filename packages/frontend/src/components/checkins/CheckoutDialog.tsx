@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import type { EnrichedCheckIn } from '@/types';
+import { adminCheckOut } from '@/utils/api';
 
 interface CheckoutDialogProps {
   checkIn: EnrichedCheckIn | null;
@@ -61,8 +62,7 @@ export function CheckoutDialog({ checkIn, open, onClose, onSuccess }: CheckoutDi
     try {
       setIsLoading(true);
 
-      // TODO: Call checkout API
-      // await checkOutChild(checkIn.checkInId, name.trim());
+      await adminCheckOut(checkIn.checkInId, name.trim());
       console.log('Checking out:', {
         checkInId: checkIn.checkInId,
         childName: checkIn.childName,

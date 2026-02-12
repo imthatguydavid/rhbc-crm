@@ -463,3 +463,22 @@ export async function validatePinForCheckout(pin: string) {
 
   return await response.json();
 }
+
+/**
+ * Admin checkout - check out a child without PIN.
+ * Used by staff in the admin portal.
+ */
+export async function adminCheckOut(checkInId: string, checkedOutBy: string) {
+  const response = await fetch(getApiUrl(`/checkin/${checkInId}/checkout`), {
+    ...API_CONFIG,
+    method: 'POST',
+    body: JSON.stringify({ checkedOutBy }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || `Failed to check out: ${response.statusText}`);
+  }
+
+  return await response.json();
+}
