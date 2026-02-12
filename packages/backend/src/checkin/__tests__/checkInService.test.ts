@@ -14,6 +14,7 @@ import {
   bulkCheckInChildren,
   checkOutByPin,
   validatePinForCheckout,
+  adminCheckOut,
 } from '../services/checkInService.js';
 
 // Create a mock DynamoDB client
@@ -418,6 +419,186 @@ describe('checkInService', () => {
       ddbMock.on(GetCommand).resolves({}); // No family found
 
       await expect(validatePinForCheckout('4289')).rejects.toThrow('Family not found');
+    });
+  });
+
+  describe('adminCheckOut', () => {
+    it('should successfully check out a child', async () => {
+      const mockCheckIn = {
+        checkInId: 'chk-123',
+        childId: 'per-456',
+        familyId: 'fam-789',
+        checkInTime: '2026-02-11T10:00:00Z',
+        checkOutTime: null,
+        checkOutPin: '1234',
+        checkOutMethod: null,
+        manualOverrideNotes: null,
+        status: 'active',
+        room: 'Nursery',
+        createdAt: '2026-02-11T10:00:00Z',
+        updatedAt: '2026-02-11T10:00:00Z',
+        checkedOutBy: null,
+        checkedOutByUserId: null,
+      };
+
+      const mockChild = {
+        personId: 'per-456',
+        firstName: 'Emma',
+        role: 'child',
+      };
+
+      // Mock GetCommand with conditional responses based on table
+      ddbMock.on(GetCommand).callsFake((input) => {
+        if (input.TableName === 'rhbc-checkins-dev') {
+          return { Item: mockCheckIn };
+        }
+        if (input.TableName === 'rhbc-people-dev') {
+          return { Item: mockChild };
+        }
+        return {};
+      });
+
+      ddbMock.on(UpdateCommand).resolves({});
+      const result = await adminCheckOut('chk-123', 'Sarah Johnson');
+
+      expect(result.checkIn.status).toBe('completed');
+      expect(result.checkIn.checkOutTime).toBeDefined();
+      expect(result.checkIn.checkOutMethod).toBe('manual_override');
+      expect(result.checkIn.checkedOutBy).toBe('Sarah Johnson');
+      expect(result.checkIn.checkedOutByUserId).toBeNull();
+      expect(result.childName).toBe('Emma');
+    });
+
+    it('should throw error if checkedOutBy is empty', async () => {
+      await expect(adminCheckOut('chk-123', '')).rejects.toThrow(
+        'Name of person picking up is required'
+      );
+    });
+
+    it('should throw error if check-in not found', async () => {
+      ddbMock.on(GetCommand).resolves({});
+
+      await expect(adminCheckOut('chk-nonexistent', 'Sarah Johnson')).rejects.toThrow(
+        'Check-in not found'
+      );
+    });
+
+    it('should throw error if already checked out', async () => {
+      const mockCheckIn = {
+        checkInId: 'chk-123',
+        childId: 'per-456',
+        familyId: 'fam-789',
+        checkInTime: '2026-02-11T10:00:00Z',
+        checkOutTime: '2026-02-11T11:00:00Z',
+        checkOutPin: '1234',
+        checkOutMethod: 'pin',
+        manualOverrideNotes: null,
+        status: 'completed', // Already completed
+        room: 'Nursery',
+        createdAt: '2026-02-11T10:00:00Z',
+        updatedAt: '2026-02-11T11:00:00Z',
+        checkedOutBy: 'John Doe',
+        checkedOutByUserId: null,
+      };
+
+      ddbMock.on(GetCommand).resolves({ Item: mockCheckIn });
+
+      await expect(adminCheckOut('chk-123', 'Sarah Johnson')).rejects.toThrow(
+        'Child already checked out'
+      );
+    });
+
+    it('should trim whitespace from checkedOutBy', async () => {
+      const mockCheckIn = {
+        checkInId: 'chk-123',
+        childId: 'per-456',
+        familyId: 'fam-789',
+        checkInTime: '2026-02-11T10:00:00Z',
+        checkOutTime: null,
+        checkOutPin: '1234',
+        checkOutMethod: null,
+        manualOverrideNotes: null,
+        status: 'active',
+        room: 'Nursery',
+        createdAt: '2026-02-11T10:00:00Z',
+        updatedAt: '2026-02-11T10:00:00Z',
+        checkedOutBy: null,
+        checkedOutByUserId: null,
+      };
+
+      ddbMock.on(GetCommand).resolvesOnce({ Item: mockCheckIn });
+      ddbMock.on(UpdateCommand).resolves({});
+      ddbMock.on(GetCommand).resolvesOnce({ Item: { firstName: 'Emma' } });
+
+      const result = await adminCheckOut('chk-123', '  Sarah Johnson  ');
+
+      expect(result.checkIn.checkedOutBy).toBe('Sarah Johnson');
+    });
+
+    it('should handle missing child name gracefully', async () => {
+      const mockCheckIn = {
+        checkInId: 'chk-123',
+        childId: 'per-456',
+        familyId: 'fam-789',
+        checkInTime: '2026-02-11T10:00:00Z',
+        checkOutTime: null,
+        checkOutPin: '1234',
+        checkOutMethod: null,
+        manualOverrideNotes: null,
+        status: 'active',
+        room: 'Nursery',
+        createdAt: '2026-02-11T10:00:00Z',
+        updatedAt: '2026-02-11T10:00:00Z',
+        checkedOutBy: null,
+        checkedOutByUserId: null,
+      };
+
+      // Mock GetCommand with conditional responses based on table
+      ddbMock.on(GetCommand).callsFake((input) => {
+        if (input.TableName === 'rhbc-checkins-dev') {
+          return { Item: mockCheckIn };
+        }
+        if (input.TableName === 'rhbc-people-dev') {
+          return {};
+        }
+        return {};
+      });
+
+      // ddbMock.on(GetCommand).resolvesOnce({ Item: mockCheckIn }); // Get check-in
+      ddbMock.on(UpdateCommand).resolves({});
+      // ddbMock.on(GetCommand).resolvesOnce({}); // Child not found
+
+      const result = await adminCheckOut('chk-123', 'Sarah Johnson');
+
+      expect(result.checkIn.status).toBe('completed');
+      expect(result.childName).toBeUndefined();
+    });
+
+    it('should accept optional adminUserId parameter', async () => {
+      const mockCheckIn = {
+        checkInId: 'chk-123',
+        childId: 'per-456',
+        familyId: 'fam-789',
+        checkInTime: '2026-02-11T10:00:00Z',
+        checkOutTime: null,
+        checkOutPin: '1234',
+        checkOutMethod: null,
+        manualOverrideNotes: null,
+        status: 'active',
+        room: 'Nursery',
+        createdAt: '2026-02-11T10:00:00Z',
+        updatedAt: '2026-02-11T10:00:00Z',
+        checkedOutBy: null,
+        checkedOutByUserId: null,
+      };
+
+      ddbMock.on(GetCommand).resolvesOnce({ Item: mockCheckIn });
+      ddbMock.on(UpdateCommand).resolves({});
+      ddbMock.on(GetCommand).resolvesOnce({ Item: { firstName: 'Emma' } });
+
+      const result = await adminCheckOut('chk-123', 'Sarah Johnson', 'user-admin-1');
+
+      expect(result.checkIn.checkedOutByUserId).toBe('user-admin-1');
     });
   });
 });

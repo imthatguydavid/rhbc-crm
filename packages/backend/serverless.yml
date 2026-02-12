@@ -77,6 +77,14 @@ functions:
           method: post
           cors: true
 
+  adminCheckOut:
+    handler: src/checkin/handlers/adminCheckOut.handler
+    events:
+      - http:
+          path: checkin/{checkInId}/checkout
+          method: post
+          cors: true
+
   # ===== Family Service =====
   createFamily:
     handler: src/family/handlers/createFamily.handler
