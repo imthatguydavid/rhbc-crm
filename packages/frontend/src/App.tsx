@@ -12,6 +12,7 @@ import { KioskGuestPage } from '@/pages/kiosk/KioskGuestPage';
 // Admin pages (we'll create/update these)
 import { DashboardPage } from '@/pages/DashboardPage';
 import { CheckInsPage } from '@/pages/CheckInsPage';
+import { ManualCheckInPage } from '@/pages/ManualCheckInPage';
 
 function AppContent() {
   const location = useLocation();
@@ -38,6 +39,7 @@ function AppContent() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/families" element={<FamiliesPage />} />
         <Route path="/checkins" element={<CheckInsPage />} />
+        <Route path="/checkins/new" element={<ManualCheckInPage />} />
       </Routes>
     </AdminLayout>
   );
