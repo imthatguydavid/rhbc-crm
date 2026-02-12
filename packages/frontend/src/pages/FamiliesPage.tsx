@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import type { Family, Person } from '@rhbc-crm/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,16 +12,15 @@ import {
 } from '@/components/ui/select';
 import { FamiliesTable } from '@/components/families/FamiliesTable';
 import { FamilyDetails } from '@/components/FamilyDetails';
-import { AddFamilyDialog } from '@/components/AddFamilyDialog';
 import {
   searchFamilies,
-  createFamily,
   getFamilyById,
   updateFamily,
   updatePerson,
   addChildToFamily,
   deletePerson,
 } from '@/utils/api';
+import { NewFamilyButton } from '@/components/families/NewFamilyButton';
 
 export function FamiliesPage() {
   // Data state
@@ -31,7 +30,6 @@ export function FamiliesPage() {
 
   // UI state
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,33 +92,6 @@ export function FamiliesPage() {
     setIsDetailsOpen(false);
     setTimeout(() => setSelectedFamily(null), 200);
   };
-
-  /**
-   * Creates a new family via API
-   */
-  async function handleAddFamily(
-    family: Family,
-    parentData: { firstName: string; phone: string; email?: string }
-  ) {
-    try {
-      setError(null);
-
-      await createFamily({
-        lastName: family.lastName,
-        status: family.status,
-        parentFirstName: parentData.firstName,
-        parentPhone: parentData.phone,
-        parentEmail: parentData.email,
-      });
-
-      // Reload families to show new one
-      await loadFamilies();
-      setIsAddDialogOpen(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create family');
-      console.error('Error creating family:', err);
-    }
-  }
 
   /**
    * Updates family information
@@ -241,10 +212,7 @@ export function FamiliesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-slate-900">Families</h1>
-        <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          New Family
-        </Button>
+        <NewFamilyButton />
       </div>
 
       {/* Error Message */}
@@ -325,11 +293,7 @@ export function FamiliesPage() {
         onDeletePerson={handleDeletePerson}
       />
 
-      <AddFamilyDialog
-        open={isAddDialogOpen}
-        onClose={() => setIsAddDialogOpen(false)}
-        onAddFamily={handleAddFamily}
-      />
+      <NewFamilyButton onSuccess={loadFamilies} />
     </div>
   );
 }
