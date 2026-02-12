@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Plus, Search } from 'lucide-react';
 import type { Family, Person } from '@rhbc-crm/shared';
 import { Button } from '@/components/ui/button';
@@ -25,8 +24,6 @@ import {
 } from '@/utils/api';
 
 export function FamiliesPage() {
-  const navigate = useNavigate();
-
   // Data state
   const [families, setFamilies] = useState<Family[]>([]);
   const [people, setPeople] = useState<Person[]>([]);
