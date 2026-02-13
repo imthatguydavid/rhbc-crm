@@ -31,6 +31,7 @@ export function FamiliesPage() {
   // UI state
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Search/filter state
@@ -75,6 +76,7 @@ export function FamiliesPage() {
     try {
       setSelectedFamily(family);
       setIsDetailsOpen(true);
+      setIsLoadingDetails(true);
 
       // Load family members from API
       const data = await getFamilyById(family.familyId);
@@ -82,6 +84,8 @@ export function FamiliesPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load family details');
       console.error('Error loading family details:', err);
+    } finally {
+      setIsLoadingDetails(false);
     }
   }
 
@@ -291,9 +295,8 @@ export function FamiliesPage() {
         onUpdatePerson={handleUpdatePerson}
         onAddChild={handleAddChild}
         onDeletePerson={handleDeletePerson}
+        isLoading={isLoadingDetails}
       />
-
-      <NewFamilyButton onSuccess={loadFamilies} />
     </div>
   );
 }

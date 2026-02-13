@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Pencil, Trash2, UserPlus } from 'lucide-react';
 import { EditFamilyDialog } from '@/components/EditFamilyDialog';
 import { EditPersonDialog } from '@/components/EditPersonDialog';
@@ -19,6 +20,7 @@ interface FamilyDetailsProps {
   people: Person[];
   open: boolean;
   onClose: () => void;
+  isLoading?: boolean;
   onUpdateFamily?: (
     familyId: string,
     updates: { lastName: string; status: 'member' | 'guest' }
@@ -39,6 +41,7 @@ export function FamilyDetails({
   people,
   open,
   onClose,
+  isLoading = false,
   onUpdateFamily,
   onUpdatePerson,
   onAddChild,
@@ -50,15 +53,15 @@ export function FamilyDetails({
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
 
-  if (!family) return null;
+  if (!family && !isLoading) return null;
 
   // Filter people for this family
-  const familyPeople = people.filter((p) => p.familyId === family.familyId);
+  const familyPeople = family ? people.filter((p) => p.familyId === family.familyId) : [];
   const parents = familyPeople.filter((p) => p.role === 'parent');
   const children = familyPeople.filter((p) => p.role === 'child');
 
   const handleEditFamily = async (updates: { lastName: string; status: 'member' | 'guest' }) => {
-    if (onUpdateFamily) {
+    if (onUpdateFamily && family) {
       await onUpdateFamily(family.familyId, updates);
     }
   };
@@ -96,7 +99,7 @@ export function FamilyDetails({
     phone?: string;
     email?: string;
   }) => {
-    if (onAddChild) {
+    if (onAddChild && family) {
       await onAddChild(family.familyId, childData);
     }
   };
@@ -105,120 +108,185 @@ export function FamilyDetails({
     <>
       <Dialog open={open} onOpenChange={onClose}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <DialogTitle className="text-2xl">{family.lastName} Family</DialogTitle>
-                <DialogDescription>
-                  {family.status === 'member' ? 'Member Family' : 'Guest Family'} • Added{' '}
-                  {new Date(family.createdAt).toLocaleDateString()}
-                </DialogDescription>
-              </div>
-              {onUpdateFamily && (
-                <Button variant="outline" size="sm" onClick={() => setIsEditFamilyOpen(true)}>
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Edit Family
-                </Button>
-              )}
-            </div>
-          </DialogHeader>
+          {/* Loading State */}
+          {isLoading ? (
+            <>
+              <DialogHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <Skeleton className="h-8 w-48 mb-2" />
+                    <Skeleton className="h-4 w-64" />
+                  </div>
+                  <Skeleton className="h-9 w-28" />
+                </div>
+              </DialogHeader>
 
-          <div className="space-y-6 mt-4">
-            {/* Parents Section */}
-            {parents.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-3">
-                  Parents ({parents.length})
-                </h3>
-                <div className="space-y-3">
-                  {parents.map((parent) => (
-                    <PersonCard
-                      key={parent.personId}
-                      person={parent}
-                      onEdit={onUpdatePerson ? () => handleEditPerson(parent) : undefined}
-                      onDelete={onDeletePerson ? () => handleDeletePerson(parent) : undefined}
-                    />
-                  ))}
+              <div className="space-y-6 mt-4">
+                {/* Parents Skeleton */}
+                <div>
+                  <Skeleton className="h-6 w-32 mb-3" />
+                  <div className="space-y-3">
+                    <PersonCardSkeleton />
+                    <PersonCardSkeleton />
+                  </div>
                 </div>
-              </div>
-            )}
 
-            {/* Children Section */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-semibold text-slate-900">
-                  Children ({children.length})
-                </h3>
-                {onAddChild && (
-                  <Button variant="outline" size="sm" onClick={() => setIsAddChildOpen(true)}>
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Add Child
-                  </Button>
-                )}
+                {/* Children Skeleton */}
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <Skeleton className="h-6 w-32" />
+                    <Skeleton className="h-9 w-28" />
+                  </div>
+                  <div className="space-y-3">
+                    <PersonCardSkeleton />
+                  </div>
+                </div>
               </div>
-              {children.length > 0 ? (
-                <div className="space-y-3">
-                  {children.map((child) => (
-                    <PersonCard
-                      key={child.personId}
-                      person={child}
-                      onEdit={onUpdatePerson ? () => handleEditPerson(child) : undefined}
-                      onDelete={onDeletePerson ? () => handleDeletePerson(child) : undefined}
-                    />
-                  ))}
+            </>
+          ) : (
+            /* Actual Content */
+            family && (
+              <>
+                <DialogHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <DialogTitle className="text-2xl">{family.lastName} Family</DialogTitle>
+                      <DialogDescription>
+                        {family.status === 'member' ? 'Member Family' : 'Guest Family'} • Added{' '}
+                        {new Date(family.createdAt).toLocaleDateString()}
+                      </DialogDescription>
+                    </div>
+                    {onUpdateFamily && (
+                      <Button variant="outline" size="sm" onClick={() => setIsEditFamilyOpen(true)}>
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Edit Family
+                      </Button>
+                    )}
+                  </div>
+                </DialogHeader>
+
+                <div className="space-y-6 mt-4">
+                  {/* Parents Section */}
+                  {parents.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-900 mb-3">
+                        Parents ({parents.length})
+                      </h3>
+                      <div className="space-y-3">
+                        {parents.map((parent) => (
+                          <PersonCard
+                            key={parent.personId}
+                            person={parent}
+                            onEdit={onUpdatePerson ? () => handleEditPerson(parent) : undefined}
+                            onDelete={onDeletePerson ? () => handleDeletePerson(parent) : undefined}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Children Section */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-lg font-semibold text-slate-900">
+                        Children ({children.length})
+                      </h3>
+                      {onAddChild && (
+                        <Button variant="outline" size="sm" onClick={() => setIsAddChildOpen(true)}>
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          Add Child
+                        </Button>
+                      )}
+                    </div>
+                    {children.length > 0 ? (
+                      <div className="space-y-3">
+                        {children.map((child) => (
+                          <PersonCard
+                            key={child.personId}
+                            person={child}
+                            onEdit={onUpdatePerson ? () => handleEditPerson(child) : undefined}
+                            onDelete={onDeletePerson ? () => handleDeletePerson(child) : undefined}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-lg border border-dashed">
+                        No children added yet
+                      </div>
+                    )}
+                  </div>
                 </div>
-              ) : (
-                <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-lg border border-dashed">
-                  No children added yet
-                </div>
-              )}
-            </div>
-          </div>
+              </>
+            )
+          )}
         </DialogContent>
       </Dialog>
 
       {/* Edit Dialogs */}
-      <EditFamilyDialog
-        family={family}
-        open={isEditFamilyOpen}
-        onClose={() => setIsEditFamilyOpen(false)}
-        onSave={handleEditFamily}
-      />
+      {family && (
+        <>
+          <EditFamilyDialog
+            family={family}
+            open={isEditFamilyOpen}
+            onClose={() => setIsEditFamilyOpen(false)}
+            onSave={handleEditFamily}
+          />
 
-      <EditPersonDialog
-        person={selectedPerson}
-        open={isEditPersonOpen}
-        onClose={() => {
-          setIsEditPersonOpen(false);
-          setSelectedPerson(null);
-        }}
-        onSave={handleSavePerson}
-      />
+          <EditPersonDialog
+            person={selectedPerson}
+            open={isEditPersonOpen}
+            onClose={() => {
+              setIsEditPersonOpen(false);
+              setSelectedPerson(null);
+            }}
+            onSave={handleSavePerson}
+          />
 
-      <AddChildDialog
-        familyName={family.lastName}
-        open={isAddChildOpen}
-        onClose={() => setIsAddChildOpen(false)}
-        onAdd={handleAddChild}
-      />
+          <AddChildDialog
+            familyName={family.lastName}
+            open={isAddChildOpen}
+            onClose={() => setIsAddChildOpen(false)}
+            onAdd={handleAddChild}
+          />
 
-      <ConfirmDialog
-        open={isDeleteConfirmOpen}
-        onClose={() => {
-          setIsDeleteConfirmOpen(false);
-          setSelectedPerson(null);
-        }}
-        onConfirm={handleConfirmDelete}
-        title="Delete Person"
-        description={
-          selectedPerson
-            ? `Are you sure you want to delete ${selectedPerson.firstName}? This action cannot be undone.`
-            : ''
-        }
-        confirmText="Delete"
-        cancelText="Cancel"
-      />
+          <ConfirmDialog
+            open={isDeleteConfirmOpen}
+            onClose={() => {
+              setIsDeleteConfirmOpen(false);
+              setSelectedPerson(null);
+            }}
+            onConfirm={handleConfirmDelete}
+            title="Delete Person"
+            description={
+              selectedPerson
+                ? `Are you sure you want to delete ${selectedPerson.firstName}? This action cannot be undone.`
+                : ''
+            }
+            confirmText="Delete"
+            cancelText="Cancel"
+          />
+        </>
+      )}
     </>
+  );
+}
+
+// Person Card Skeleton Component
+function PersonCardSkeleton() {
+  return (
+    <div className="rounded-lg border bg-slate-50 p-4">
+      <div className="flex items-start justify-between">
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-5 w-32" />
+          <Skeleton className="h-4 w-48" />
+          <Skeleton className="h-4 w-40" />
+        </div>
+        <div className="flex gap-2 ml-4">
+          <Skeleton className="h-8 w-8" />
+          <Skeleton className="h-8 w-8" />
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -33,7 +33,7 @@ export function CheckInsPage() {
         </TabsList>
 
         <TabsContent value="active" className="mt-6">
-          <ActiveCheckInsTable />
+          <ActiveCheckInsTable showActions={true} pageSize={10} />
         </TabsContent>
 
         <TabsContent value="history" className="mt-6">
