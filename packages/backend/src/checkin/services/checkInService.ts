@@ -2,6 +2,7 @@ import { PutCommand, GetCommand, QueryCommand, UpdateCommand } from '@aws-sdk/li
 import type { CheckIn, Person, Family } from '@rhbc-crm/shared';
 import { dynamoDb, Tables } from '../../shared/utils/dynamodb';
 import { getPeopleByFamily } from '../../family/services/familyService';
+import { CHECK_IN_STATUS, CHECKOUT_METHOD } from '@rhbc-crm/shared';
 
 /**
  * Generates a random 6-character alphanumeric string for IDs
@@ -58,7 +59,7 @@ export async function checkInChild(data: {
         '#status': 'status',
       },
       ExpressionAttributeValues: {
-        ':status': 'active',
+        ':status': CHECK_IN_STATUS.ACTIVE,
         ':childId': data.childId,
       },
     })
@@ -81,7 +82,7 @@ export async function checkInChild(data: {
     checkOutPin: pin,
     checkOutMethod: null,
     manualOverrideNotes: null,
-    status: 'active',
+    status: CHECK_IN_STATUS.ACTIVE,
     room: data.room,
     createdAt: now,
     updatedAt: now,
@@ -132,7 +133,7 @@ export async function getActiveCheckIns(): Promise<CheckIn[]> {
           '#status': 'status', // status is a reserved word in DynamoDB
         },
         ExpressionAttributeValues: {
-          ':status': 'active',
+          ':status': CHECK_IN_STATUS.ACTIVE,
         },
         ScanIndexForward: false, // Sort by checkInTime descending (newest first)
       })
@@ -175,7 +176,7 @@ export async function checkOutChild(checkInId: string, providedPin: string): Pro
     }
 
     // Check if already checked out
-    if (checkIn.status === 'completed') {
+    if (checkIn.status === CHECK_IN_STATUS.COMPLETED) {
       throw new Error('Child already checked out');
     }
 
@@ -192,8 +193,8 @@ export async function checkOutChild(checkInId: string, providedPin: string): Pro
         },
         ExpressionAttributeValues: {
           ':checkOutTime': now,
-          ':method': 'pin',
-          ':status': 'completed',
+          ':method': CHECKOUT_METHOD.PIN,
+          ':status': CHECK_IN_STATUS.COMPLETED,
           ':updatedAt': now,
         },
       })
@@ -202,8 +203,8 @@ export async function checkOutChild(checkInId: string, providedPin: string): Pro
     return {
       ...checkIn,
       checkOutTime: now,
-      checkOutMethod: 'pin',
-      status: 'completed',
+      checkOutMethod: CHECKOUT_METHOD.PIN,
+      status: CHECK_IN_STATUS.COMPLETED,
       updatedAt: now,
     };
   } catch (error) {
@@ -278,7 +279,7 @@ export async function bulkCheckInChildren(data: {
         checkOutPin: pin,
         checkOutMethod: null,
         manualOverrideNotes: null,
-        status: 'active',
+        status: CHECK_IN_STATUS.ACTIVE,
         createdAt: now,
         updatedAt: now,
         checkedOutBy: null,
@@ -364,10 +365,10 @@ export async function checkOutByPin(
       const updatedCheckIn: CheckIn = {
         ...checkIn,
         checkOutTime,
-        checkOutMethod: 'pin',
+        checkOutMethod: CHECKOUT_METHOD.PIN,
         checkedOutBy: checkedOutBy.trim(),
         checkedOutByUserId: null,
-        status: 'completed',
+        status: CHECK_IN_STATUS.COMPLETED,
         updatedAt: checkOutTime,
       };
 
@@ -384,10 +385,10 @@ export async function checkOutByPin(
           },
           ExpressionAttributeValues: {
             ':checkOutTime': checkOutTime,
-            ':checkOutMethod': 'pin',
+            ':checkOutMethod': CHECKOUT_METHOD.PIN,
             ':checkedOutBy': checkedOutBy.trim(),
             ':checkedOutByUserId': null,
-            ':status': 'completed',
+            ':status': CHECK_IN_STATUS.COMPLETED,
             ':updatedAt': checkOutTime,
           },
         })
@@ -446,7 +447,7 @@ async function getActiveCheckInByChild(childId: string): Promise<CheckIn | null>
           '#status': 'status',
         },
         ExpressionAttributeValues: {
-          ':status': 'active',
+          ':status': CHECK_IN_STATUS.ACTIVE,
           ':childId': childId,
         },
       })
@@ -599,7 +600,7 @@ export async function adminCheckOut(
 
     const checkIn = getResult.Item as CheckIn;
     // Check if already checked out
-    if (checkIn.status === 'completed') {
+    if (checkIn.status === CHECK_IN_STATUS.COMPLETED) {
       throw new Error('Child already checked out');
     }
 
@@ -608,10 +609,10 @@ export async function adminCheckOut(
     const updatedCheckIn: CheckIn = {
       ...checkIn,
       checkOutTime: now,
-      checkOutMethod: 'manual_override',
+      checkOutMethod: CHECKOUT_METHOD.STAFF_OVERRIDE,
       checkedOutBy: checkedOutBy.trim(),
       checkedOutByUserId: adminUserId || null,
-      status: 'completed',
+      status: CHECK_IN_STATUS.COMPLETED,
       updatedAt: now,
     };
 
@@ -661,7 +662,7 @@ export async function adminCheckOut(
 }
 
 /**
- * Get all completed check-ins (status = 'completed').
+ * Get all completed check-ins (status = CHECK_IN_STATUS.COMPLETED).
  * Returns check-ins sorted by checkout time (most recent first).
  *
  * Used by the History tab to show past check-ins with pickup information.
@@ -686,7 +687,7 @@ export async function getCompletedCheckIns(): Promise<CheckIn[]> {
           '#status': 'status',
         },
         ExpressionAttributeValues: {
-          ':status': 'completed',
+          ':status': CHECK_IN_STATUS.COMPLETED,
         },
         ScanIndexForward: false, // Descending order (most recent first by checkInTime)
       })

@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/empty';
 import { getCompletedCheckIns, getFamilyById } from '@/utils/api';
 import type { EnrichedCheckIn } from '@/types';
+import { CHECKOUT_METHOD } from '@rhbc-crm/shared';
 
 interface HistoryCheckInsTableProps {
   pageSize?: number;
@@ -230,12 +231,12 @@ export function HistoryCheckInsTable({ pageSize = 10 }: HistoryCheckInsTableProp
                 <TableCell>
                   <span
                     className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      checkIn.checkOutMethod === 'pin'
+                      checkIn.checkOutMethod === CHECKOUT_METHOD.PIN
                         ? 'bg-green-100 text-green-800'
                         : 'bg-orange-100 text-orange-800'
                     }`}
                   >
-                    {checkIn.checkOutMethod === 'pin' ? 'PIN' : 'Staff'}
+                    {checkIn.checkOutMethod === CHECKOUT_METHOD.PIN ? 'PIN' : 'Staff'}
                   </span>
                 </TableCell>
               </TableRow>
