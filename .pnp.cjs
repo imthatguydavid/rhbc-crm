@@ -5348,6 +5348,7 @@ const RAW_RUNTIME_STATE =
           ["@radix-ui/react-select", "virtual:f8d34d36032259c79d75ea60860bc944b5bb8f9e121818930dd9f03e6b3b087c0bdaf3be87db5b3d7bedd885628cf894d79a235f9b20f742bcb3a93670b0eced#npm:2.2.6"],\
           ["@radix-ui/react-slot", "virtual:f8d34d36032259c79d75ea60860bc944b5bb8f9e121818930dd9f03e6b3b087c0bdaf3be87db5b3d7bedd885628cf894d79a235f9b20f742bcb3a93670b0eced#npm:1.2.4"],\
           ["@rhbc-crm/frontend", "workspace:packages/frontend"],\
+          ["@rhbc-crm/shared", "workspace:packages/shared"],\
           ["@tailwindcss/vite", "virtual:f8d34d36032259c79d75ea60860bc944b5bb8f9e121818930dd9f03e6b3b087c0bdaf3be87db5b3d7bedd885628cf894d79a235f9b20f742bcb3a93670b0eced#npm:4.1.18"],\
           ["@types/node", "npm:25.1.0"],\
           ["@types/react", "npm:18.3.27"],\

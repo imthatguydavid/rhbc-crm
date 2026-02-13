@@ -4030,6 +4030,7 @@ __metadata:
     "@radix-ui/react-label": "npm:^2.1.8"
     "@radix-ui/react-select": "npm:^2.2.6"
     "@radix-ui/react-slot": "npm:^1.2.4"
+    "@rhbc-crm/shared": "workspace:*"
     "@tailwindcss/vite": "npm:^4.1.18"
     "@types/node": "npm:^25.1.0"
     "@types/react": "npm:^18.3.12"

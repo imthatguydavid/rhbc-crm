@@ -34,13 +34,14 @@ import {
 } from '@/components/ui/empty';
 import type { Family } from '@rhbc-crm/shared';
 import { useNavigate } from 'react-router-dom';
+import { FAMILY_STATUS } from '@rhbc-crm/shared';
 
 interface FamiliesTableProps {
   families: Family[];
   isLoading: boolean;
   onAddChild: (family: Family) => void;
   onDelete: (family: Family) => void;
-  pageSize?: number; // Items per page
+  pageSize?: number;
 }
 
 /**
@@ -150,16 +151,14 @@ export function FamiliesTable({
 
                 {/* Status Badge */}
                 <TableCell onClick={() => navigate(`/families/${family.familyId}`)}>
-                  {' '}
-                  {/* ← Change this */}
                   <span
                     className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      family.status === 'member'
+                      family.status === FAMILY_STATUS.MEMBER
                         ? 'bg-green-100 text-green-800'
                         : 'bg-blue-100 text-blue-800'
                     }`}
                   >
-                    {family.status === 'member' ? 'Member' : 'Guest'}
+                    {family.status === FAMILY_STATUS.MEMBER ? 'Member' : 'Guest'}
                   </span>
                 </TableCell>
 

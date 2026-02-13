@@ -15,7 +15,7 @@ import {
   addChildToFamily,
   deletePerson,
 } from '@/utils/api';
-import type { Family, Person } from '@rhbc-crm/shared';
+import { Family, FamilyStatus, Person, FAMILY_STATUS, PERSON_ROLE } from '@rhbc-crm/shared';
 
 /**
  * Family Details Page
@@ -68,7 +68,7 @@ export function FamilyDetailsPage() {
   /**
    * Handles updating family information
    */
-  const handleUpdateFamily = async (updates: { lastName: string; status: 'member' | 'guest' }) => {
+  const handleUpdateFamily = async (updates: { lastName: string; status: FamilyStatus }) => {
     if (!family) return;
 
     try {
@@ -156,8 +156,8 @@ export function FamilyDetailsPage() {
   };
 
   // Filter people
-  const parents = people.filter((p) => p.role === 'parent');
-  const children = people.filter((p) => p.role === 'child');
+  const parents = people.filter((p) => p.role === PERSON_ROLE.PARENT);
+  const children = people.filter((p) => p.role === PERSON_ROLE.CHILD);
 
   // Loading State
   if (isLoading) {
@@ -206,7 +206,7 @@ export function FamilyDetailsPage() {
           <div>
             <h1 className="text-3xl font-bold text-slate-900">{family.lastName} Family</h1>
             <p className="text-slate-600">
-              {family.status === 'member' ? 'Member Family' : 'Guest Family'} • Added{' '}
+              {family.status === FAMILY_STATUS.MEMBER ? 'Member Family' : 'Guest Family'} • Added{' '}
               {new Date(family.createdAt).toLocaleDateString()}
             </p>
           </div>

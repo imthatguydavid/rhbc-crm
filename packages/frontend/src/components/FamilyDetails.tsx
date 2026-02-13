@@ -1,5 +1,5 @@
+import { FamilyStatus, Family, Person, FAMILY_STATUS, PERSON_ROLE } from '@rhbc-crm/shared';
 import { useState } from 'react';
-import type { Family, Person } from '@rhbc-crm/shared';
 import {
   Dialog,
   DialogContent,
@@ -23,7 +23,7 @@ interface FamilyDetailsProps {
   isLoading?: boolean;
   onUpdateFamily?: (
     familyId: string,
-    updates: { lastName: string; status: 'member' | 'guest' }
+    updates: { lastName: string; status: FamilyStatus }
   ) => Promise<void>;
   onUpdatePerson?: (
     personId: string,
@@ -57,10 +57,10 @@ export function FamilyDetails({
 
   // Filter people for this family
   const familyPeople = family ? people.filter((p) => p.familyId === family.familyId) : [];
-  const parents = familyPeople.filter((p) => p.role === 'parent');
-  const children = familyPeople.filter((p) => p.role === 'child');
+  const parents = familyPeople.filter((p) => p.role === PERSON_ROLE.PARENT);
+  const children = familyPeople.filter((p) => p.role === PERSON_ROLE.CHILD);
 
-  const handleEditFamily = async (updates: { lastName: string; status: 'member' | 'guest' }) => {
+  const handleEditFamily = async (updates: { lastName: string; status: FamilyStatus }) => {
     if (onUpdateFamily && family) {
       await onUpdateFamily(family.familyId, updates);
     }
@@ -152,8 +152,8 @@ export function FamilyDetails({
                     <div>
                       <DialogTitle className="text-2xl">{family.lastName} Family</DialogTitle>
                       <DialogDescription>
-                        {family.status === 'member' ? 'Member Family' : 'Guest Family'} • Added{' '}
-                        {new Date(family.createdAt).toLocaleDateString()}
+                        {family.status === FAMILY_STATUS.MEMBER ? 'Member Family' : 'Guest Family'}{' '}
+                        • Added {new Date(family.createdAt).toLocaleDateString()}
                       </DialogDescription>
                     </div>
                     {onUpdateFamily && (
