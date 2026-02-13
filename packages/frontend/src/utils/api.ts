@@ -6,6 +6,7 @@
  */
 
 import { getApiUrl, API_ENDPOINTS, API_CONFIG } from '@/config/api';
+import type { CheckIn } from '@rhbc-crm/shared';
 
 /**
  * Retrieves all families from the database.
@@ -481,4 +482,23 @@ export async function adminCheckOut(checkInId: string, checkedOutBy: string) {
   }
 
   return await response.json();
+}
+
+/**
+ * Get all completed check-ins (history)
+ */
+export async function getCompletedCheckIns(): Promise<CheckIn[]> {
+  const response = await fetch(getApiUrl(`/checkins/completed`), {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch completed check-ins');
+  }
+
+  const data = await response.json();
+  return data.checkIns;
 }

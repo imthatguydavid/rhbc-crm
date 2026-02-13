@@ -37,7 +37,7 @@ export function CheckInsPage() {
         </TabsContent>
 
         <TabsContent value="history" className="mt-6">
-          <HistoryCheckInsTable />
+          <HistoryCheckInsTable pageSize={10} />
         </TabsContent>
       </Tabs>
     </div>

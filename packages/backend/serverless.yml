@@ -85,6 +85,14 @@ functions:
           method: post
           cors: true
 
+  getCompletedCheckIns:
+    handler: src/checkin/handlers/getCompletedCheckIns.handler
+    events:
+      - http:
+          path: checkins/completed
+          method: get
+          cors: true
+
   # ===== Family Service =====
   createFamily:
     handler: src/family/handlers/createFamily.handler
