@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
-import type { Family, Person } from '@rhbc-crm/shared';
+import type { Family } from '@rhbc-crm/shared';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -11,14 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { FamiliesTable } from '@/components/families/FamiliesTable';
-import {
-  searchFamilies,
-  getFamilyById,
-  updateFamily,
-  updatePerson,
-  addChildToFamily,
-  deletePerson,
-} from '@/utils/api';
+import { searchFamilies } from '@/utils/api';
 import { NewFamilyButton } from '@/components/families/NewFamilyButton';
 
 export function FamiliesPage() {
