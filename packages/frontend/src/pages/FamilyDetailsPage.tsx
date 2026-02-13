@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Family, FamilyStatus, Person, FAMILY_STATUS, PERSON_ROLE } from '@rhbc-crm/shared';
+import { Family, FamilyStatus, Person, PERSON_ROLE } from '@rhbc-crm/shared';
 import { ArrowLeft, Pencil, Trash2, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,7 +16,9 @@ import {
   addChildToFamily,
   deletePerson,
 } from '@/utils/api';
+import { getFamilyStatusBadge } from '@/utils/badges';
 import { formatPhone } from '@/utils/formatters';
+import { Badge } from '@/components/ui/badge.tsx';
 
 /**
  * Family Details Page
@@ -207,8 +209,11 @@ export function FamilyDetailsPage() {
           <div>
             <h1 className="text-3xl font-bold text-slate-900">{family.lastName} Family</h1>
             <p className="text-slate-600">
-              {family.status === FAMILY_STATUS.MEMBER ? 'Member Family' : 'Guest Family'} • Added{' '}
-              {new Date(family.createdAt).toLocaleDateString()}
+              {(() => {
+                const badge = getFamilyStatusBadge(family.status);
+                return <Badge className={`${badge.className} mr-4`}>{badge.label}</Badge>;
+              })()}
+              Added {new Date(family.createdAt).toLocaleDateString()}
             </p>
           </div>
         </div>

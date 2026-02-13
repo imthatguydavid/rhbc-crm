@@ -1,4 +1,9 @@
 import { useState, useEffect } from 'react';
+import type { EnrichedCheckIn } from '@/types';
+import { getCompletedCheckIns, getFamilyById } from '@/utils/api';
+import { getRoomBadge, getCheckoutMethodBadge } from '@/utils/badges';
+import { formatDateTime } from '@/utils/formatters';
+import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -23,10 +28,6 @@ import {
   EmptyTitle,
   EmptyDescription,
 } from '@/components/ui/empty';
-import { getCompletedCheckIns, getFamilyById } from '@/utils/api';
-import type { EnrichedCheckIn } from '@/types';
-import { CHECKOUT_METHOD } from '@rhbc-crm/shared';
-import { formatDateTime } from '@/utils/formatters';
 
 interface HistoryCheckInsTableProps {
   pageSize?: number;
@@ -191,9 +192,10 @@ export function HistoryCheckInsTable({ pageSize = 10 }: HistoryCheckInsTableProp
 
                 {/* Room */}
                 <TableCell>
-                  <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                    {checkIn.room}
-                  </span>
+                  {(() => {
+                    const badge = getRoomBadge(checkIn.room);
+                    return <Badge className={badge.className}>{badge.label}</Badge>;
+                  })()}
                 </TableCell>
 
                 {/* Check-In Time */}
@@ -217,15 +219,10 @@ export function HistoryCheckInsTable({ pageSize = 10 }: HistoryCheckInsTableProp
 
                 {/* Checkout Method */}
                 <TableCell>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      checkIn.checkOutMethod === CHECKOUT_METHOD.PIN
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-orange-100 text-orange-800'
-                    }`}
-                  >
-                    {checkIn.checkOutMethod === CHECKOUT_METHOD.PIN ? 'PIN' : 'Staff'}
-                  </span>
+                  {(() => {
+                    const badge = getCheckoutMethodBadge(checkIn.checkOutMethod);
+                    return <Badge className={badge.className}>{badge.label}</Badge>;
+                  })()}
                 </TableCell>
               </TableRow>
             ))}

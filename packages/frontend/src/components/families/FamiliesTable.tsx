@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import type { Family } from '@rhbc-crm/shared';
+import { useNavigate } from 'react-router-dom';
 import { MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -32,9 +34,8 @@ import {
   EmptyTitle,
   EmptyDescription,
 } from '@/components/ui/empty';
-import type { Family } from '@rhbc-crm/shared';
-import { useNavigate } from 'react-router-dom';
-import { FAMILY_STATUS } from '@rhbc-crm/shared';
+import { Badge } from '@/components/ui/badge';
+import { getFamilyStatusBadge } from '@/utils/badges';
 
 interface FamiliesTableProps {
   families: Family[];
@@ -151,15 +152,10 @@ export function FamiliesTable({
 
                 {/* Status Badge */}
                 <TableCell onClick={() => navigate(`/families/${family.familyId}`)}>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      family.status === FAMILY_STATUS.MEMBER
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-blue-100 text-blue-800'
-                    }`}
-                  >
-                    {family.status === FAMILY_STATUS.MEMBER ? 'Member' : 'Guest'}
-                  </span>
+                  {(() => {
+                    const badge = getFamilyStatusBadge(family.status);
+                    return <Badge className={badge.className}>{badge.label}</Badge>;
+                  })()}
                 </TableCell>
 
                 {/* Actions Dropdown Menu */}

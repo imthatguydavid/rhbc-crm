@@ -11,6 +11,8 @@ import {
 } from '@/components/ui/empty';
 import { searchFamilies } from '@/utils/api';
 import type { Family } from '@rhbc-crm/shared';
+import { Badge } from '@/components/ui/badge';
+import { getFamilyStatusBadge } from '@/utils/badges';
 
 interface FamilySearchStepProps {
   onFamilySelected: (family: Family) => void;
@@ -115,8 +117,11 @@ export function FamilySearchStep({ onFamilySelected }: FamilySearchStepProps) {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-semibold text-slate-900">{family.lastName} Family</p>
-                    <p className="text-sm text-slate-600">
-                      {family.status === 'member' ? 'Member' : 'Guest'}
+                    <p className="mt-2">
+                      {(() => {
+                        const badge = getFamilyStatusBadge(family.status);
+                        return <Badge className={badge.className}>{badge.label}</Badge>;
+                      })()}
                     </p>
                   </div>
                   <span className="text-slate-400">→</span>

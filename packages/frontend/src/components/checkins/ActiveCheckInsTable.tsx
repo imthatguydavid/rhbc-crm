@@ -29,6 +29,8 @@ import {
 import { CheckoutDialog } from './CheckoutDialog';
 import { getActiveCheckIns, getFamilyById } from '@/utils/api';
 import type { EnrichedCheckIn } from '@/types';
+import { Badge } from '@/components/ui/badge';
+import { getRoomBadge } from '@/utils/badges';
 
 interface ActiveCheckInsTableProps {
   limit?: number; // Limit results (for Dashboard)
@@ -248,9 +250,12 @@ export function ActiveCheckInsTable({
                     <TableCell className="font-medium">{checkIn.childName || 'Unknown'}</TableCell>
                     <TableCell>{checkIn.familyName || 'Unknown'}</TableCell>
                     <TableCell>
-                      <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                        {checkIn.room}
-                      </span>
+                      <TableCell>
+                        {(() => {
+                          const badge = getRoomBadge(checkIn.room);
+                          return <Badge className={badge.className}>{badge.label}</Badge>;
+                        })()}
+                      </TableCell>
                     </TableCell>
                     <TableCell>
                       <span className="font-mono font-semibold text-slate-900">

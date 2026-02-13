@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { checkInChild } from '@/utils/api';
 import type { Family, Person } from '@rhbc-crm/shared';
+import { getFamilyStatusBadge } from '@/utils/badges';
+import { DEFAULT_ROOM } from '@/utils/constants';
 
 interface ReviewStepProps {
   family: Family;
@@ -31,7 +33,11 @@ export function ReviewStep({ family, child, onBack }: ReviewStepProps) {
       setIsSubmitting(true);
 
       // Call check-in API
-      await checkInChild({ familyId: family.familyId, childId: child.personId, room: 'nursery' });
+      await checkInChild({
+        familyId: family.familyId,
+        childId: child.personId,
+        room: DEFAULT_ROOM,
+      });
 
       // Success!
       setIsSuccess(true);
@@ -91,7 +97,7 @@ export function ReviewStep({ family, child, onBack }: ReviewStepProps) {
             <div>
               <p className="text-sm text-slate-600">Status</p>
               <p className="font-semibold text-slate-900">
-                {family.status === 'member' ? 'Member' : 'Guest'}
+                {getFamilyStatusBadge(family.status).label}
               </p>
             </div>
           </div>

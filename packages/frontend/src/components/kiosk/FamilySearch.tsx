@@ -3,6 +3,8 @@ import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import type { Family } from '@rhbc-crm/shared';
 import { searchFamilies } from '@/utils/api';
+import { getFamilyStatusBadge } from '@/utils/badges';
+import { FAMILY_STATUS } from '@rhbc-crm/shared';
 
 interface FamilySearchProps {
   onSelectFamily: (family: Family) => void;
@@ -78,8 +80,10 @@ export function FamilySearch({ onSelectFamily }: FamilySearchProps) {
                       {parent && ` - ${parent.firstName}`}
                     </div>
                     <div className="text-xl text-slate-500 mt-1 flex items-center gap-3">
-                      <span>{family.status === 'member' ? '👥 Member' : '👋 Guest'}</span>
-                      {parent?.phone && <span>• (...{parent.phone.slice(-4)})</span>}
+                      <span>
+                        {family.status === FAMILY_STATUS.MEMBER ? '👥 ' : '👋 '}
+                        {getFamilyStatusBadge(family.status).label}
+                      </span>
                     </div>
                   </button>
                 );
