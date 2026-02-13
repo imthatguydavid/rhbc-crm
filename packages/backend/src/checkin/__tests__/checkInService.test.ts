@@ -15,6 +15,7 @@ import {
   checkOutByPin,
   validatePinForCheckout,
   adminCheckOut,
+  getCompletedCheckIns,
 } from '../services/checkInService.js';
 
 // Create a mock DynamoDB client
@@ -599,6 +600,100 @@ describe('checkInService', () => {
       const result = await adminCheckOut('chk-123', 'Sarah Johnson', 'user-admin-1');
 
       expect(result.checkIn.checkedOutByUserId).toBe('user-admin-1');
+    });
+  });
+
+  describe('getCompletedCheckIns', () => {
+    it('should return completed check-ins sorted by checkout time', async () => {
+      const mockCheckIns = [
+        {
+          checkInId: 'chk-1',
+          childId: 'per-1',
+          familyId: 'fam-1',
+          status: 'completed',
+          checkInTime: '2026-02-12T09:00:00Z',
+          checkOutTime: '2026-02-12T11:00:00Z',
+          room: 'Nursery',
+          checkOutPin: '1234',
+          checkOutMethod: 'pin',
+          checkedOutBy: 'John Doe',
+          checkedOutByUserId: null,
+          manualOverrideNotes: null,
+          createdAt: '2026-02-12T09:00:00Z',
+          updatedAt: '2026-02-12T11:00:00Z',
+        },
+        {
+          checkInId: 'chk-2',
+          childId: 'per-2',
+          familyId: 'fam-2',
+          status: 'completed',
+          checkInTime: '2026-02-12T09:30:00Z',
+          checkOutTime: '2026-02-12T12:00:00Z',
+          room: 'Nursery',
+          checkOutPin: '5678',
+          checkOutMethod: 'pin',
+          checkedOutBy: 'Jane Smith',
+          checkedOutByUserId: null,
+          manualOverrideNotes: null,
+          createdAt: '2026-02-12T09:30:00Z',
+          updatedAt: '2026-02-12T12:00:00Z',
+        },
+      ];
+
+      ddbMock.on(QueryCommand).resolves({ Items: mockCheckIns });
+
+      const result = await getCompletedCheckIns();
+
+      expect(result).toHaveLength(2);
+      // Should be sorted by checkOutTime descending (most recent first)
+      expect(result[0].checkInId).toBe('chk-2'); // 12:00 PM
+      expect(result[1].checkInId).toBe('chk-1'); // 11:00 AM
+    });
+
+    it('should return empty array when no completed check-ins exist', async () => {
+      ddbMock.on(QueryCommand).resolves({ Items: [] });
+
+      const result = await getCompletedCheckIns();
+
+      expect(result).toEqual([]);
+    });
+
+    it('should query the correct GSI with completed status', async () => {
+      ddbMock.on(QueryCommand).resolves({ Items: [] });
+
+      await getCompletedCheckIns();
+
+      const call = ddbMock.commandCalls(QueryCommand)[0];
+      expect(call.args[0].input).toMatchObject({
+        TableName: 'rhbc-checkins-dev',
+        IndexName: 'status-checkInTime-index',
+        KeyConditionExpression: '#status = :status',
+        ExpressionAttributeValues: {
+          ':status': 'completed',
+        },
+      });
+    });
+
+    it('should handle missing checkOutTime gracefully', async () => {
+      const mockCheckIns = [
+        {
+          checkInId: 'chk-1',
+          status: 'completed',
+          checkOutTime: '2026-02-12T11:00:00Z',
+        },
+        {
+          checkInId: 'chk-2',
+          status: 'completed',
+          checkOutTime: null, // Missing checkout time
+        },
+      ];
+
+      ddbMock.on(QueryCommand).resolves({ Items: mockCheckIns });
+
+      const result = await getCompletedCheckIns();
+
+      expect(result).toHaveLength(2);
+      // Should not crash due to null checkOutTime
     });
   });
 });

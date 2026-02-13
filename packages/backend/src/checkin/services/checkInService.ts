@@ -659,3 +659,51 @@ export async function adminCheckOut(
     throw error;
   }
 }
+
+/**
+ * Get all completed check-ins (status = 'completed').
+ * Returns check-ins sorted by checkout time (most recent first).
+ *
+ * Used by the History tab to show past check-ins with pickup information.
+ *
+ * @returns Promise resolving to array of completed check-in records
+ *
+ * @example
+ * ```typescript
+ * const history = await getCompletedCheckIns();
+ * // Returns: [{ checkInId, childId, familyId, checkOutTime, checkedOutBy, ... }]
+ * ```
+ */
+export async function getCompletedCheckIns(): Promise<CheckIn[]> {
+  try {
+    // Query GSI for completed check-ins
+    const result = await dynamoDb.send(
+      new QueryCommand({
+        TableName: Tables.CHECKINS,
+        IndexName: 'status-checkInTime-index',
+        KeyConditionExpression: '#status = :status',
+        ExpressionAttributeNames: {
+          '#status': 'status',
+        },
+        ExpressionAttributeValues: {
+          ':status': 'completed',
+        },
+        ScanIndexForward: false, // Descending order (most recent first by checkInTime)
+      })
+    );
+
+    const checkIns = (result.Items || []) as CheckIn[];
+
+    // Sort by checkout time (most recent first)
+    // Note: We sort by checkOutTime, not checkInTime, for better UX
+    checkIns.sort((a, b) => {
+      if (!a.checkOutTime || !b.checkOutTime) return 0;
+      return new Date(b.checkOutTime).getTime() - new Date(a.checkOutTime).getTime();
+    });
+
+    return checkIns;
+  } catch (error) {
+    console.error('Error fetching completed check-ins:', error);
+    throw error;
+  }
+}
