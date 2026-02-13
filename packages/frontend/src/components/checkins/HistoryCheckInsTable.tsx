@@ -26,6 +26,7 @@ import {
 import { getCompletedCheckIns, getFamilyById } from '@/utils/api';
 import type { EnrichedCheckIn } from '@/types';
 import { CHECKOUT_METHOD } from '@rhbc-crm/shared';
+import { formatDateTime } from '@/utils/formatters';
 
 interface HistoryCheckInsTableProps {
   pageSize?: number;
@@ -87,19 +88,6 @@ export function HistoryCheckInsTable({ pageSize = 10 }: HistoryCheckInsTableProp
     } finally {
       setIsLoading(false);
     }
-  };
-
-  /**
-   * Formats a date as "Feb 10, 9:30 AM"
-   */
-  const formatDateTime = (isoString: string) => {
-    const date = new Date(isoString);
-    return date.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
   };
 
   // Pagination calculations

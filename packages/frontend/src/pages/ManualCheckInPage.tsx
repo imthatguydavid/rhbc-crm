@@ -8,7 +8,46 @@ import { ChildSelectionStep } from '@/components/checkins/ChildSelectionStep';
 import { ReviewStep } from '@/components/checkins/ReviewStep';
 import type { Family, Person } from '@rhbc-crm/shared';
 
-type Step = 'family' | 'child' | 'review';
+/**
+ * Step identifiers for the manual check-in wizard
+ */
+const STEPS = {
+  FAMILY: 'family',
+  CHILD: 'child',
+  REVIEW: 'review',
+} as const;
+
+type Step = (typeof STEPS)[keyof typeof STEPS];
+
+/**
+ * Configuration for each step in the wizard
+ */
+const STEP_CONFIG = {
+  [STEPS.FAMILY]: {
+    number: 1,
+    title: 'Find Family',
+    description: 'Search for the family by last name',
+  },
+  [STEPS.CHILD]: {
+    number: 2,
+    title: 'Select Child',
+    description: 'Choose which child to check in',
+  },
+  [STEPS.REVIEW]: {
+    number: 3,
+    title: 'Review & Confirm',
+    description: 'Review the details and complete check-in',
+  },
+} as const;
+
+/**
+ * Step navigation map for going back
+ */
+const PREVIOUS_STEP: Record<Step, Step | null> = {
+  [STEPS.FAMILY]: null,
+  [STEPS.CHILD]: STEPS.FAMILY,
+  [STEPS.REVIEW]: STEPS.CHILD,
+};
 
 /**
  * Manual Check-In Page
@@ -25,9 +64,13 @@ export function ManualCheckInPage() {
   const navigate = useNavigate();
 
   // Form state
-  const [currentStep, setCurrentStep] = useState<Step>('family');
+  const [currentStep, setCurrentStep] = useState<Step>(STEPS.FAMILY);
   const [selectedFamily, setSelectedFamily] = useState<Family | null>(null);
   const [selectedChild, setSelectedChild] = useState<Person | null>(null);
+
+  // Current step configuration
+  const stepConfig = STEP_CONFIG[currentStep];
+  const totalSteps = Object.keys(STEP_CONFIG).length;
 
   /**
    * Navigate back to Check Ins page
@@ -41,7 +84,7 @@ export function ManualCheckInPage() {
    */
   const handleFamilySelected = (family: Family) => {
     setSelectedFamily(family);
-    setCurrentStep('child');
+    setCurrentStep(STEPS.CHILD);
   };
 
   /**
@@ -49,28 +92,16 @@ export function ManualCheckInPage() {
    */
   const handleChildSelected = (child: Person) => {
     setSelectedChild(child);
-    setCurrentStep('review');
+    setCurrentStep(STEPS.REVIEW);
   };
 
   /**
    * Go back one step
    */
   const handleBack = () => {
-    if (currentStep === 'child') setCurrentStep('family');
-    if (currentStep === 'review') setCurrentStep('child');
-  };
-
-  /**
-   * Get step number for progress indicator
-   */
-  const getStepNumber = () => {
-    switch (currentStep) {
-      case 'family':
-        return 1;
-      case 'child':
-        return 2;
-      case 'review':
-        return 3;
+    const previousStep = PREVIOUS_STEP[currentStep];
+    if (previousStep) {
+      setCurrentStep(previousStep);
     }
   };
 
@@ -83,43 +114,38 @@ export function ManualCheckInPage() {
         </Button>
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Manual Check-In</h1>
-          <p className="text-slate-600">Step {getStepNumber()} of 3</p>
+          <p className="text-slate-600">
+            Step {stepConfig.number} of {totalSteps}
+          </p>
         </div>
       </div>
 
       {/* Progress Indicator */}
       <div className="flex gap-2">
-        <div
-          className={`h-2 flex-1 rounded-full ${currentStep === 'family' ? 'bg-blue-600' : 'bg-slate-200'}`}
-        />
-        <div
-          className={`h-2 flex-1 rounded-full ${currentStep === 'child' ? 'bg-blue-600' : 'bg-slate-200'}`}
-        />
-        <div
-          className={`h-2 flex-1 rounded-full ${currentStep === 'review' ? 'bg-blue-600' : 'bg-slate-200'}`}
-        />
+        {Object.values(STEP_CONFIG).map((step) => (
+          <div
+            key={step.number}
+            className={`h-2 flex-1 rounded-full ${
+              step.number <= stepConfig.number ? 'bg-blue-600' : 'bg-slate-200'
+            }`}
+          />
+        ))}
       </div>
 
       {/* Form Steps */}
       <Card>
         <CardHeader>
-          <CardTitle>
-            {currentStep === 'family' && 'Find Family'}
-            {currentStep === 'child' && 'Select Child'}
-            {currentStep === 'review' && 'Review & Confirm'}
-          </CardTitle>
-          <CardDescription>
-            {currentStep === 'family' && 'Search for the family by last name'}
-            {currentStep === 'child' && 'Choose which child to check in'}
-            {currentStep === 'review' && 'Review the details and complete check-in'}
-          </CardDescription>
+          <CardTitle>{stepConfig.title}</CardTitle>
+          <CardDescription>{stepConfig.description}</CardDescription>
         </CardHeader>
         <CardContent>
           {/* Step 1: Family Search */}
-          {currentStep === 'family' && <FamilySearchStep onFamilySelected={handleFamilySelected} />}
+          {currentStep === STEPS.FAMILY && (
+            <FamilySearchStep onFamilySelected={handleFamilySelected} />
+          )}
 
           {/* Step 2: Child Selection */}
-          {currentStep === 'child' && selectedFamily && (
+          {currentStep === STEPS.CHILD && selectedFamily && (
             <ChildSelectionStep
               family={selectedFamily}
               onChildSelected={handleChildSelected}
@@ -128,7 +154,7 @@ export function ManualCheckInPage() {
           )}
 
           {/* Step 3: Review & Confirm */}
-          {currentStep === 'review' && selectedFamily && selectedChild && (
+          {currentStep === STEPS.REVIEW && selectedFamily && selectedChild && (
             <ReviewStep family={selectedFamily} child={selectedChild} onBack={handleBack} />
           )}
         </CardContent>

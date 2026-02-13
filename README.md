@@ -207,7 +207,6 @@ rhbc-crm/
 │   │   ├── src/
 │   │   │   ├── components/
 │   │   │   │   ├── ui/            # shadcn/ui components
-│   │   │   │   ├── FamilyDetails.tsx
 │   │   │   │   ├── AddFamilyDialog.tsx
 │   │   │   ├── data
 │   │   │   ├── App.tsx

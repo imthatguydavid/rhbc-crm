@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Family, FamilyStatus, Person, FAMILY_STATUS, PERSON_ROLE } from '@rhbc-crm/shared';
 import { ArrowLeft, Pencil, Trash2, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,7 +16,7 @@ import {
   addChildToFamily,
   deletePerson,
 } from '@/utils/api';
-import { Family, FamilyStatus, Person, FAMILY_STATUS, PERSON_ROLE } from '@rhbc-crm/shared';
+import { formatPhone } from '@/utils/formatters';
 
 /**
  * Family Details Page
@@ -363,14 +364,4 @@ function PersonCard({ person, onEdit, onDelete }: PersonCardProps) {
       </div>
     </div>
   );
-}
-
-// Helper function to format phone numbers
-function formatPhone(phone: string): string {
-  const cleaned = phone.replace(/\D/g, '');
-  const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
-  if (match) {
-    return `(${match[1]}) ${match[2]}-${match[3]}`;
-  }
-  return phone;
 }
