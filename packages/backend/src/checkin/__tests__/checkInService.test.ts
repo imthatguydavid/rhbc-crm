@@ -17,6 +17,7 @@ import {
   adminCheckOut,
   getCompletedCheckIns,
 } from '../services/checkInService.js';
+import { CHECK_IN_STATUS, CHECKOUT_METHOD } from '@rhbc-crm/shared';
 
 // Create a mock DynamoDB client
 const ddbMock = mockClient(DynamoDBDocumentClient);
@@ -60,7 +61,7 @@ describe('checkInService', () => {
       });
 
       // Assert
-      expect(result.checkIn.status).toBe('active');
+      expect(result.checkIn.status).toBe(CHECK_IN_STATUS.ACTIVE);
     });
 
     it('should set checkInTime', async () => {
@@ -123,7 +124,7 @@ describe('checkInService', () => {
               // 2nd call: duplicate exists!
               checkInId: 'chk-existing',
               childId: 'per-test-123',
-              status: 'active',
+              status: CHECK_IN_STATUS.ACTIVE,
               checkInTime: '2026-02-04T10:00:00Z',
             },
           ],
@@ -162,7 +163,7 @@ describe('checkInService', () => {
           checkOutPin: '1234',
           checkOutMethod: null,
           manualOverrideNotes: null,
-          status: 'active',
+          status: CHECK_IN_STATUS.ACTIVE,
           room: 'Nursery',
           createdAt: '2026-02-04T10:00:00Z',
           updatedAt: '2026-02-04T10:00:00Z',
@@ -175,8 +176,8 @@ describe('checkInService', () => {
       const result = await checkOutChild('chk-test-123', '1234');
 
       // Assert: Check-out succeeded
-      expect(result.status).toBe('completed');
-      expect(result.checkOutMethod).toBe('pin');
+      expect(result.status).toBe(CHECK_IN_STATUS.COMPLETED);
+      expect(result.checkOutMethod).toBe(CHECKOUT_METHOD.PIN);
       expect(result.checkOutTime).toBeDefined();
       expect(result.checkOutTime).not.toBeNull();
       expect(result.checkOutTime).toMatch(/^\d{4}-\d{2}-\d{2}T/); // ISO format
@@ -188,7 +189,7 @@ describe('checkInService', () => {
         Item: {
           checkInId: 'chk-test-123',
           checkOutPin: '1234', // Correct PIN is 1234
-          status: 'active',
+          status: CHECK_IN_STATUS.ACTIVE,
         },
       });
 
@@ -211,9 +212,9 @@ describe('checkInService', () => {
           checkInTime: '2026-02-04T10:00:00Z',
           checkOutTime: '2026-02-04T11:00:00Z', // Already checked out!
           checkOutPin: '1234',
-          checkOutMethod: 'pin',
+          checkOutMethod: CHECKOUT_METHOD.PIN,
           manualOverrideNotes: null,
-          status: 'completed', // ← Key field: already completed
+          status: CHECK_IN_STATUS.COMPLETED, // ← Key field: already completed
           room: 'Nursery',
           createdAt: '2026-02-04T10:00:00Z',
           updatedAt: '2026-02-04T11:00:00Z',
@@ -263,7 +264,7 @@ describe('checkInService', () => {
             checkInId: 'chk-1',
             childId: 'per-123',
             familyId: 'fam-456',
-            status: 'active',
+            status: CHECK_IN_STATUS.ACTIVE,
             checkInTime: '2026-02-04T10:00:00Z',
             checkOutTime: null,
             room: 'Nursery',
@@ -272,7 +273,7 @@ describe('checkInService', () => {
             checkInId: 'chk-2',
             childId: 'per-789',
             familyId: 'fam-012',
-            status: 'active',
+            status: CHECK_IN_STATUS.ACTIVE,
             checkInTime: '2026-02-04T10:30:00Z',
             checkOutTime: null,
             room: 'Toddler Room',
@@ -285,8 +286,8 @@ describe('checkInService', () => {
 
       // Assert
       expect(result.length).toBe(2);
-      expect(result[0].status).toBe('active');
-      expect(result[1].status).toBe('active');
+      expect(result[0].status).toBe(CHECK_IN_STATUS.ACTIVE);
+      expect(result[1].status).toBe(CHECK_IN_STATUS.ACTIVE);
       expect(result[0].checkOutTime).toBeNull();
       expect(result[1].checkOutTime).toBeNull();
     });
@@ -351,19 +352,19 @@ describe('checkInService', () => {
           checkInId: 'chk-1',
           childId: 'per-456',
           checkOutPin: '4289',
-          status: 'active',
+          status: CHECK_IN_STATUS.ACTIVE,
         },
         {
           checkInId: 'chk-2',
           childId: 'per-789',
           checkOutPin: '4289',
-          status: 'active',
+          status: CHECK_IN_STATUS.ACTIVE,
         },
         {
           checkInId: 'chk-3',
           childId: 'per-999',
           checkOutPin: '5555',
-          status: 'active',
+          status: CHECK_IN_STATUS.ACTIVE,
         },
       ];
 
@@ -374,8 +375,8 @@ describe('checkInService', () => {
 
       expect(result.checkIns).toHaveLength(2);
       expect(result.message).toContain('2 children');
-      expect(result.checkIns[0].status).toBe('completed');
-      expect(result.checkIns[1].status).toBe('completed');
+      expect(result.checkIns[0].status).toBe(CHECK_IN_STATUS.COMPLETED);
+      expect(result.checkIns[1].status).toBe(CHECK_IN_STATUS.COMPLETED);
     });
 
     it('should throw error if PIN not found', async () => {
@@ -412,7 +413,7 @@ describe('checkInService', () => {
           childId: 'per-child-1',
           familyId: 'fam-nonexistent',
           checkOutPin: '4289',
-          status: 'active',
+          status: CHECK_IN_STATUS.ACTIVE,
         },
       ];
 
@@ -434,7 +435,7 @@ describe('checkInService', () => {
         checkOutPin: '1234',
         checkOutMethod: null,
         manualOverrideNotes: null,
-        status: 'active',
+        status: CHECK_IN_STATUS.ACTIVE,
         room: 'Nursery',
         createdAt: '2026-02-11T10:00:00Z',
         updatedAt: '2026-02-11T10:00:00Z',
@@ -462,9 +463,9 @@ describe('checkInService', () => {
       ddbMock.on(UpdateCommand).resolves({});
       const result = await adminCheckOut('chk-123', 'Sarah Johnson');
 
-      expect(result.checkIn.status).toBe('completed');
+      expect(result.checkIn.status).toBe(CHECK_IN_STATUS.COMPLETED);
       expect(result.checkIn.checkOutTime).toBeDefined();
-      expect(result.checkIn.checkOutMethod).toBe('manual_override');
+      expect(result.checkIn.checkOutMethod).toBe(CHECKOUT_METHOD.STAFF_OVERRIDE);
       expect(result.checkIn.checkedOutBy).toBe('Sarah Johnson');
       expect(result.checkIn.checkedOutByUserId).toBeNull();
       expect(result.childName).toBe('Emma');
@@ -492,9 +493,9 @@ describe('checkInService', () => {
         checkInTime: '2026-02-11T10:00:00Z',
         checkOutTime: '2026-02-11T11:00:00Z',
         checkOutPin: '1234',
-        checkOutMethod: 'pin',
+        checkOutMethod: CHECKOUT_METHOD.PIN,
         manualOverrideNotes: null,
-        status: 'completed', // Already completed
+        status: CHECK_IN_STATUS.COMPLETED, // Already completed
         room: 'Nursery',
         createdAt: '2026-02-11T10:00:00Z',
         updatedAt: '2026-02-11T11:00:00Z',
@@ -519,7 +520,7 @@ describe('checkInService', () => {
         checkOutPin: '1234',
         checkOutMethod: null,
         manualOverrideNotes: null,
-        status: 'active',
+        status: CHECK_IN_STATUS.ACTIVE,
         room: 'Nursery',
         createdAt: '2026-02-11T10:00:00Z',
         updatedAt: '2026-02-11T10:00:00Z',
@@ -546,7 +547,7 @@ describe('checkInService', () => {
         checkOutPin: '1234',
         checkOutMethod: null,
         manualOverrideNotes: null,
-        status: 'active',
+        status: CHECK_IN_STATUS.ACTIVE,
         room: 'Nursery',
         createdAt: '2026-02-11T10:00:00Z',
         updatedAt: '2026-02-11T10:00:00Z',
@@ -571,7 +572,7 @@ describe('checkInService', () => {
 
       const result = await adminCheckOut('chk-123', 'Sarah Johnson');
 
-      expect(result.checkIn.status).toBe('completed');
+      expect(result.checkIn.status).toBe(CHECK_IN_STATUS.COMPLETED);
       expect(result.childName).toBeUndefined();
     });
 
@@ -585,7 +586,7 @@ describe('checkInService', () => {
         checkOutPin: '1234',
         checkOutMethod: null,
         manualOverrideNotes: null,
-        status: 'active',
+        status: CHECK_IN_STATUS.ACTIVE,
         room: 'Nursery',
         createdAt: '2026-02-11T10:00:00Z',
         updatedAt: '2026-02-11T10:00:00Z',
@@ -610,12 +611,12 @@ describe('checkInService', () => {
           checkInId: 'chk-1',
           childId: 'per-1',
           familyId: 'fam-1',
-          status: 'completed',
+          status: CHECK_IN_STATUS.COMPLETED,
           checkInTime: '2026-02-12T09:00:00Z',
           checkOutTime: '2026-02-12T11:00:00Z',
           room: 'Nursery',
           checkOutPin: '1234',
-          checkOutMethod: 'pin',
+          checkOutMethod: CHECKOUT_METHOD.PIN,
           checkedOutBy: 'John Doe',
           checkedOutByUserId: null,
           manualOverrideNotes: null,
@@ -626,12 +627,12 @@ describe('checkInService', () => {
           checkInId: 'chk-2',
           childId: 'per-2',
           familyId: 'fam-2',
-          status: 'completed',
+          status: CHECK_IN_STATUS.COMPLETED,
           checkInTime: '2026-02-12T09:30:00Z',
           checkOutTime: '2026-02-12T12:00:00Z',
           room: 'Nursery',
           checkOutPin: '5678',
-          checkOutMethod: 'pin',
+          checkOutMethod: CHECKOUT_METHOD.PIN,
           checkedOutBy: 'Jane Smith',
           checkedOutByUserId: null,
           manualOverrideNotes: null,
@@ -669,7 +670,7 @@ describe('checkInService', () => {
         IndexName: 'status-checkInTime-index',
         KeyConditionExpression: '#status = :status',
         ExpressionAttributeValues: {
-          ':status': 'completed',
+          ':status': CHECK_IN_STATUS.COMPLETED,
         },
       });
     });
@@ -678,12 +679,12 @@ describe('checkInService', () => {
       const mockCheckIns = [
         {
           checkInId: 'chk-1',
-          status: 'completed',
+          status: CHECK_IN_STATUS.COMPLETED,
           checkOutTime: '2026-02-12T11:00:00Z',
         },
         {
           checkInId: 'chk-2',
-          status: 'completed',
+          status: CHECK_IN_STATUS.COMPLETED,
           checkOutTime: null, // Missing checkout time
         },
       ];

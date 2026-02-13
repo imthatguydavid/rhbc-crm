@@ -11,3 +11,4 @@ export * from './types/Person';
 export * from './types/CheckIn';
 export * from './types/Event';
 export * from './types/EventRegistration';
+export * from './constants/constants';
