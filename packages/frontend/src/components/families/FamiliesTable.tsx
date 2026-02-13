@@ -33,11 +33,11 @@ import {
   EmptyDescription,
 } from '@/components/ui/empty';
 import type { Family } from '@rhbc-crm/shared';
+import { useNavigate } from 'react-router-dom';
 
 interface FamiliesTableProps {
   families: Family[];
   isLoading: boolean;
-  onViewDetails: (family: Family) => void;
   onAddChild: (family: Family) => void;
   onDelete: (family: Family) => void;
   pageSize?: number; // Items per page
@@ -52,11 +52,11 @@ interface FamiliesTableProps {
 export function FamiliesTable({
   families,
   isLoading,
-  onViewDetails,
   onAddChild,
   onDelete,
   pageSize = 10,
 }: FamiliesTableProps) {
+  const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
 
   // Pagination calculations
@@ -141,12 +141,17 @@ export function FamiliesTable({
             {paginatedFamilies.map((family) => (
               <TableRow key={family.familyId} className="cursor-pointer hover:bg-slate-50">
                 {/* Family Name - Clickable to view details */}
-                <TableCell className="font-medium" onClick={() => onViewDetails(family)}>
+                <TableCell
+                  className="font-medium"
+                  onClick={() => navigate(`/families/${family.familyId}`)} // ← Change this
+                >
                   {family.lastName} Family
                 </TableCell>
 
                 {/* Status Badge */}
-                <TableCell onClick={() => onViewDetails(family)}>
+                <TableCell onClick={() => navigate(`/families/${family.familyId}`)}>
+                  {' '}
+                  {/* ← Change this */}
                   <span
                     className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                       family.status === 'member'
@@ -168,7 +173,7 @@ export function FamiliesTable({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onViewDetails(family)}>
+                      <DropdownMenuItem onClick={() => navigate(`/families/${family.familyId}`)}>
                         View Details
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onAddChild(family)}>

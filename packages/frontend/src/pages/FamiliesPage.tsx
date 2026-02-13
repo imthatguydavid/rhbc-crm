@@ -11,7 +11,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { FamiliesTable } from '@/components/families/FamiliesTable';
-import { FamilyDetails } from '@/components/FamilyDetails';
 import {
   searchFamilies,
   getFamilyById,
@@ -25,13 +24,9 @@ import { NewFamilyButton } from '@/components/families/NewFamilyButton';
 export function FamiliesPage() {
   // Data state
   const [families, setFamilies] = useState<Family[]>([]);
-  const [people, setPeople] = useState<Person[]>([]);
-  const [selectedFamily, setSelectedFamily] = useState<Family | null>(null);
 
   // UI state
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Search/filter state
@@ -70,124 +65,11 @@ export function FamiliesPage() {
   }
 
   /**
-   * Opens family details dialog and loads family members
-   */
-  async function handleViewDetails(family: Family) {
-    try {
-      setSelectedFamily(family);
-      setIsDetailsOpen(true);
-      setIsLoadingDetails(true);
-
-      // Load family members from API
-      const data = await getFamilyById(family.familyId);
-      setPeople(data.people);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load family details');
-      console.error('Error loading family details:', err);
-    } finally {
-      setIsLoadingDetails(false);
-    }
-  }
-
-  /**
-   * Closes details dialog
-   */
-  const handleCloseDetails = () => {
-    setIsDetailsOpen(false);
-    setTimeout(() => setSelectedFamily(null), 200);
-  };
-
-  /**
-   * Updates family information
-   */
-  async function handleUpdateFamily(
-    familyId: string,
-    updates: { lastName: string; status: 'member' | 'guest' }
-  ) {
-    try {
-      setError(null);
-      await updateFamily(familyId, updates);
-
-      // Reload families and refresh details
-      await loadFamilies();
-      if (selectedFamily) {
-        const data = await getFamilyById(familyId);
-        setSelectedFamily(data.family);
-        setPeople(data.people);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update family');
-      console.error('Error updating family:', err);
-    }
-  }
-
-  /**
-   * Updates person information
-   */
-  async function handleUpdatePerson(
-    personId: string,
-    updates: { firstName: string; phone?: string; email?: string }
-  ) {
-    try {
-      setError(null);
-      await updatePerson(personId, updates);
-
-      // Reload family details
-      if (selectedFamily) {
-        const data = await getFamilyById(selectedFamily.familyId);
-        setPeople(data.people);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update person');
-      console.error('Error updating person:', err);
-    }
-  }
-
-  /**
-   * Adds a child to the family
-   */
-  async function handleAddChild(
-    familyId: string,
-    childData: { firstName: string; phone?: string; email?: string }
-  ) {
-    try {
-      setError(null);
-      await addChildToFamily(familyId, childData);
-
-      // Reload family details
-      const data = await getFamilyById(familyId);
-      setPeople(data.people);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add child');
-      console.error('Error adding child:', err);
-    }
-  }
-
-  /**
-   * Deletes a person from the family
-   */
-  async function handleDeletePerson(personId: string) {
-    try {
-      setError(null);
-      await deletePerson(personId);
-
-      // Reload family details
-      if (selectedFamily) {
-        const data = await getFamilyById(selectedFamily.familyId);
-        setPeople(data.people);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete person');
-      console.error('Error deleting person:', err);
-    }
-  }
-
-  /**
    * Opens add child dialog for a specific family
    */
   const handleAddChildFromMenu = async (family: Family) => {
     // Open details first, then trigger add child
-    await handleViewDetails(family);
+    console.log('please add child from menu', family);
     // TODO: Trigger add child action in FamilyDetails dialog
   };
 
@@ -280,22 +162,8 @@ export function FamiliesPage() {
       <FamiliesTable
         families={families}
         isLoading={isLoading}
-        onViewDetails={handleViewDetails}
         onAddChild={handleAddChildFromMenu}
         onDelete={handleDeleteFamily}
-      />
-
-      {/* Dialogs */}
-      <FamilyDetails
-        family={selectedFamily}
-        people={people}
-        open={isDetailsOpen}
-        onClose={handleCloseDetails}
-        onUpdateFamily={handleUpdateFamily}
-        onUpdatePerson={handleUpdatePerson}
-        onAddChild={handleAddChild}
-        onDeletePerson={handleDeletePerson}
-        isLoading={isLoadingDetails}
       />
     </div>
   );
