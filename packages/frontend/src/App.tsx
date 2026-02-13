@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { FamiliesPage } from '@/pages/FamiliesPage';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { KioskLayout } from '@/components/kiosk/KioskLayout';
+import { FamilyDetailsPage } from '@/pages/FamilyDetailsPage';
 
 // Kiosk pages
 import { KioskHomePage } from '@/pages/kiosk/KioskHomePage';
@@ -38,6 +39,7 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/families" element={<FamiliesPage />} />
+        <Route path="/families/:familyId" element={<FamilyDetailsPage />} />
         <Route path="/checkins" element={<CheckInsPage />} />
         <Route path="/checkins/new" element={<ManualCheckInPage />} />
       </Routes>
