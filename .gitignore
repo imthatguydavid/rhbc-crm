@@ -53,3 +53,5 @@ packages/backend/deploy/
 # Environment variables (keep local configuration)
 .env.local
 .env.*.local
+
+claude/*
