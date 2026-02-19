@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,10 +27,10 @@ import {
   EmptyContent,
 } from '@/components/ui/empty';
 import { CheckoutDialog } from './CheckoutDialog';
-import { getActiveCheckIns, getFamilyById } from '@/utils/api';
 import type { EnrichedCheckIn } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { getRoomBadge } from '@/utils/badges';
+import { useActiveCheckIns } from '@/hooks/useActiveCheckIns';
 
 interface ActiveCheckInsTableProps {
   limit?: number; // Limit results (for Dashboard)
@@ -52,78 +52,23 @@ export function ActiveCheckInsTable({
   pageSize = 10,
 }: ActiveCheckInsTableProps) {
   const navigate = useNavigate();
-  const [checkIns, setCheckIns] = useState<EnrichedCheckIn[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedCheckIn, setSelectedCheckIn] = useState<EnrichedCheckIn | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const { isLoading, checkIns, loadActiveCheckIns } = useActiveCheckIns();
 
-  // Load active check-ins on mount
-  useEffect(() => {
-    loadActiveCheckIns();
-  }, []);
-
-  /**
-   * Fetches active check-ins and enriches with child/family names
-   */
-  const loadActiveCheckIns = async () => {
-    try {
-      setIsLoading(true);
-      const activeCheckIns = await getActiveCheckIns();
-
-      // Enrich with child and family names
-      const enriched = await Promise.all(
-        activeCheckIns.map(async (checkIn: EnrichedCheckIn) => {
-          try {
-            const familyData = await getFamilyById(checkIn.familyId);
-            const child = familyData.people.find((p: any) => p.personId === checkIn.childId);
-
-            return {
-              ...checkIn,
-              childName: child?.firstName || 'Unknown',
-              familyName: familyData.family.lastName || 'Unknown',
-            };
-          } catch (error) {
-            console.error('Error loading family data:', error);
-            return {
-              ...checkIn,
-              childName: 'Unknown',
-              familyName: 'Unknown',
-            };
-          }
-        })
-      );
-
-      setCheckIns(enriched);
-    } catch (error) {
-      console.error('Error loading active check-ins:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  /**
-   * Opens checkout dialog for a specific check-in
-   */
   const handleCheckOut = (checkIn: EnrichedCheckIn) => {
     setSelectedCheckIn(checkIn);
   };
 
-  /**
-   * Closes checkout dialog
-   */
   const handleCloseDialog = () => {
     setSelectedCheckIn(null);
   };
 
-  /**
-   * Handles successful checkout - refresh table
-   */
   const handleCheckoutSuccess = () => {
     setSelectedCheckIn(null);
-    loadActiveCheckIns(); // Refresh the table
+    loadActiveCheckIns();
   };
 
-  // Apply limit if specified (for Dashboard)
   const limitedCheckIns = limit ? checkIns.slice(0, limit) : checkIns;
 
   // Pagination calculations
@@ -135,7 +80,6 @@ export function ActiveCheckInsTable({
   // Show pagination only if we have more than one page and no limit
   const showPagination = !limit && totalPages > 1;
 
-  // Loading State
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -189,7 +133,6 @@ export function ActiveCheckInsTable({
     );
   }
 
-  // Empty State
   if (checkIns.length === 0) {
     return (
       <Empty>
@@ -205,11 +148,9 @@ export function ActiveCheckInsTable({
     );
   }
 
-  // Main Table
   return (
     <>
       <div className="space-y-4">
-        {/* Header with View All */}
         {showViewAll && (
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-slate-900">
@@ -220,8 +161,6 @@ export function ActiveCheckInsTable({
             </Button>
           </div>
         )}
-
-        {/* Table */}
         <div className="border rounded-lg">
           <Table>
             <TableHeader>
@@ -244,18 +183,13 @@ export function ActiveCheckInsTable({
                   hour: 'numeric',
                   minute: '2-digit',
                 });
-
+                const badge = getRoomBadge(checkIn.room);
                 return (
                   <TableRow key={checkIn.checkInId}>
                     <TableCell className="font-medium">{checkIn.childName || 'Unknown'}</TableCell>
                     <TableCell>{checkIn.familyName || 'Unknown'}</TableCell>
                     <TableCell>
-                      <TableCell>
-                        {(() => {
-                          const badge = getRoomBadge(checkIn.room);
-                          return <Badge className={badge.className}>{badge.label}</Badge>;
-                        })()}
-                      </TableCell>
+                      <Badge className={badge.className}>{badge.label}</Badge>
                     </TableCell>
                     <TableCell>
                       <span className="font-mono font-semibold text-slate-900">
@@ -276,8 +210,6 @@ export function ActiveCheckInsTable({
             </TableBody>
           </Table>
         </div>
-
-        {/* Pagination */}
         {showPagination && (
           <Pagination>
             <PaginationContent>
@@ -289,7 +221,6 @@ export function ActiveCheckInsTable({
                   }
                 />
               </PaginationItem>
-
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                 <PaginationItem key={page}>
                   <PaginationLink
@@ -314,8 +245,6 @@ export function ActiveCheckInsTable({
           </Pagination>
         )}
       </div>
-
-      {/* Checkout Dialog */}
       {showActions && (
         <CheckoutDialog
           checkIn={selectedCheckIn}

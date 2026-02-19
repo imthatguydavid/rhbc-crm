@@ -41,27 +41,19 @@ export function FamilyDetailsPage() {
     handleAddChild,
   } = useFamilyDetails(familyId);
 
-  /**
-   * Opens edit person drawer
-   */
   const handleEditPerson = (person: Person) => {
     setSelectedPerson(person);
     setIsEditPersonOpen(true);
   };
 
-  /**
-   * Opens delete confirmation dialog
-   */
   const handleDeletePerson = (person: Person) => {
     setSelectedPerson(person);
     setIsDeleteConfirmOpen(true);
   };
 
-  // Loading State
   if (isLoading) {
     return (
       <div className="space-y-6">
-        {/* Header Skeleton */}
         <div className="flex items-center gap-4">
           <Skeleton className="h-10 w-10" />
           <div className="flex-1">
@@ -70,8 +62,6 @@ export function FamilyDetailsPage() {
           </div>
           <Skeleton className="h-10 w-32" />
         </div>
-
-        {/* Content Skeleton */}
         <div className="space-y-6">
           <div>
             <Skeleton className="h-6 w-32 mb-3" />
@@ -97,7 +87,6 @@ export function FamilyDetailsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/families')}>
