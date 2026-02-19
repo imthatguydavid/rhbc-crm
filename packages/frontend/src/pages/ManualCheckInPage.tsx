@@ -105,9 +105,10 @@ export function ManualCheckInPage() {
     }
   };
 
+  const readyForReview = currentStep === STEPS.REVIEW && selectedFamily && selectedChild;
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={handleCancel}>
           <ArrowLeft className="h-4 w-4" />
@@ -119,8 +120,6 @@ export function ManualCheckInPage() {
           </p>
         </div>
       </div>
-
-      {/* Progress Indicator */}
       <div className="flex gap-2">
         {Object.values(STEP_CONFIG).map((step) => (
           <div
@@ -132,19 +131,15 @@ export function ManualCheckInPage() {
         ))}
       </div>
 
-      {/* Form Steps */}
       <Card>
         <CardHeader>
           <CardTitle>{stepConfig.title}</CardTitle>
           <CardDescription>{stepConfig.description}</CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Step 1: Family Search */}
           {currentStep === STEPS.FAMILY && (
             <FamilySearchStep onFamilySelected={handleFamilySelected} />
           )}
-
-          {/* Step 2: Child Selection */}
           {currentStep === STEPS.CHILD && selectedFamily && (
             <ChildSelectionStep
               family={selectedFamily}
@@ -152,9 +147,7 @@ export function ManualCheckInPage() {
               onBack={handleBack}
             />
           )}
-
-          {/* Step 3: Review & Confirm */}
-          {currentStep === STEPS.REVIEW && selectedFamily && selectedChild && (
+          {readyForReview && (
             <ReviewStep family={selectedFamily} child={selectedChild} onBack={handleBack} />
           )}
         </CardContent>
