@@ -1,6 +1,4 @@
-import { useState, useEffect } from 'react';
-import type { EnrichedCheckIn } from '@/types';
-import { getCompletedCheckIns, getFamilyById } from '@/utils/api';
+import { useState } from 'react';
 import { getRoomBadge, getCheckoutMethodBadge } from '@/utils/badges';
 import { formatDateTime } from '@/utils/formatters';
 import { Badge } from '@/components/ui/badge';
@@ -12,14 +10,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Empty,
@@ -28,6 +18,8 @@ import {
   EmptyTitle,
   EmptyDescription,
 } from '@/components/ui/empty';
+import { useHistoryCheckIns } from '@/hooks/useHistoryCheckIns';
+import { TablePagination } from '@/components/TablePagination';
 
 interface HistoryCheckInsTableProps {
   pageSize?: number;
@@ -40,58 +32,9 @@ interface HistoryCheckInsTableProps {
  * Shows who picked up each child and when. Sorted by checkout time (most recent first).
  */
 export function HistoryCheckInsTable({ pageSize = 10 }: HistoryCheckInsTableProps) {
-  const [checkIns, setCheckIns] = useState<EnrichedCheckIn[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const { isLoading, checkIns } = useHistoryCheckIns();
 
-  // Load completed check-ins on component mount
-  useEffect(() => {
-    loadCompletedCheckIns();
-  }, []);
-
-  /**
-   * Fetches completed check-ins from dedicated endpoint.
-   * Enriches data with child and family names.
-   */
-  const loadCompletedCheckIns = async () => {
-    try {
-      setIsLoading(true);
-
-      // Use dedicated completed check-ins endpoint
-      const completedCheckIns = await getCompletedCheckIns();
-
-      // Enrich with child and family names
-      const enriched = await Promise.all(
-        completedCheckIns.map(async (checkIn: EnrichedCheckIn) => {
-          try {
-            const familyData = await getFamilyById(checkIn.familyId);
-            const child = familyData.people.find((p: any) => p.personId === checkIn.childId);
-
-            return {
-              ...checkIn,
-              childName: child?.firstName || 'Unknown',
-              familyName: familyData.family.lastName || 'Unknown',
-            };
-          } catch (error) {
-            console.error('Error loading family data:', error);
-            return {
-              ...checkIn,
-              childName: 'Unknown',
-              familyName: 'Unknown',
-            };
-          }
-        })
-      );
-
-      setCheckIns(enriched);
-    } catch (error) {
-      console.error('Error loading completed check-ins:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Pagination calculations
   const totalPages = Math.ceil(checkIns.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
@@ -182,87 +125,44 @@ export function HistoryCheckInsTable({ pageSize = 10 }: HistoryCheckInsTableProp
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedCheckIns.map((checkIn) => (
-              <TableRow key={checkIn.checkInId}>
-                {/* Child Name */}
-                <TableCell className="font-medium">{checkIn.childName || 'Unknown'}</TableCell>
-
-                {/* Family Name */}
-                <TableCell>{checkIn.familyName || 'Unknown'}</TableCell>
-
-                {/* Room */}
-                <TableCell>
-                  {(() => {
-                    const badge = getRoomBadge(checkIn.room);
-                    return <Badge className={badge.className}>{badge.label}</Badge>;
-                  })()}
-                </TableCell>
-
-                {/* Check-In Time */}
-                <TableCell className="text-slate-600">
-                  {formatDateTime(checkIn.checkInTime)}
-                </TableCell>
-
-                {/* Check-Out Time */}
-                <TableCell className="text-slate-600">
-                  {checkIn.checkOutTime ? formatDateTime(checkIn.checkOutTime) : '—'}
-                </TableCell>
-
-                {/* Picked Up By */}
-                <TableCell>
-                  {checkIn.checkedOutBy ? (
-                    <span className="text-slate-900">{checkIn.checkedOutBy}</span>
-                  ) : (
-                    <span className="text-slate-400">—</span>
-                  )}
-                </TableCell>
-
-                {/* Checkout Method */}
-                <TableCell>
-                  {(() => {
-                    const badge = getCheckoutMethodBadge(checkIn.checkOutMethod);
-                    return <Badge className={badge.className}>{badge.label}</Badge>;
-                  })()}
-                </TableCell>
-              </TableRow>
-            ))}
+            {paginatedCheckIns.map((checkIn) => {
+              const methodBadge = getCheckoutMethodBadge(checkIn.checkOutMethod);
+              const roomBadge = getRoomBadge(checkIn.room);
+              return (
+                <TableRow key={checkIn.checkInId}>
+                  <TableCell className="font-medium">{checkIn.childName || 'Unknown'}</TableCell>
+                  <TableCell>{checkIn.familyName || 'Unknown'}</TableCell>
+                  <TableCell>
+                    <Badge className={roomBadge.className}>{roomBadge.label}</Badge>
+                  </TableCell>
+                  <TableCell className="text-slate-600">
+                    {formatDateTime(checkIn.checkInTime)}
+                  </TableCell>
+                  <TableCell className="text-slate-600">
+                    {checkIn.checkOutTime ? formatDateTime(checkIn.checkOutTime) : '—'}
+                  </TableCell>
+                  <TableCell>
+                    {checkIn.checkedOutBy ? (
+                      <span className="text-slate-900">{checkIn.checkedOutBy}</span>
+                    ) : (
+                      <span className="text-slate-400">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={methodBadge.className}>{methodBadge.label}</Badge>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
-
-      {/* Pagination */}
       {showPagination && (
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-              />
-            </PaginationItem>
-
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <PaginationItem key={page}>
-                <PaginationLink
-                  onClick={() => setCurrentPage(page)}
-                  isActive={currentPage === page}
-                  className="cursor-pointer"
-                >
-                  {page}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
-
-            <PaginationItem>
-              <PaginationNext
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                className={
-                  currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'
-                }
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       )}
     </div>
   );
