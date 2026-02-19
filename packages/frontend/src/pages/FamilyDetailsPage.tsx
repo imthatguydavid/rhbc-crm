@@ -1,24 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Family, FamilyStatus, Person, PERSON_ROLE } from '@rhbc-crm/shared';
+import { Person } from '@rhbc-crm/shared';
 import { ArrowLeft, Pencil, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from 'sonner';
 import { EditFamilySheet } from '@/components/families/EditFamilySheet';
 import { EditPersonSheet } from '@/components/families/EditPersonSheet';
 import { AddChildSheet } from '@/components/families/AddChildSheet';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
-import {
-  getFamilyById,
-  updateFamily,
-  updatePerson,
-  addChildToFamily,
-  deletePerson,
-} from '@/utils/api';
 import { getFamilyStatusBadge } from '@/utils/badges';
 import { PersonCard } from '@/components/families/PersonCard';
 import { Badge } from '@/components/ui/badge';
+import { useFamilyDetails } from '@/hooks/useFamilyDetails';
 
 /**
  * Family Details Page
@@ -29,56 +22,24 @@ import { Badge } from '@/components/ui/badge';
 export function FamilyDetailsPage() {
   const { familyId } = useParams<{ familyId: string }>();
   const navigate = useNavigate();
-  const [family, setFamily] = useState<Family | null>(null);
-  const [people, setPeople] = useState<Person[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isEditFamilyOpen, setIsEditFamilyOpen] = useState(false);
   const [isEditPersonOpen, setIsEditPersonOpen] = useState(false);
   const [isAddChildOpen, setIsAddChildOpen] = useState(false);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
 
-  useEffect(() => {
-    if (familyId) {
-      loadFamilyDetails();
-    }
-  }, [familyId]);
-
-  /**
-   * Loads family details and members
-   */
-  const loadFamilyDetails = async () => {
-    if (!familyId) return;
-
-    try {
-      setIsLoading(true);
-      const data = await getFamilyById(familyId);
-      setFamily(data.family);
-      setPeople(data.people);
-    } catch (error) {
-      console.error('Error loading family details:', error);
-      toast.error('Failed to load family details');
-      navigate('/families'); // Redirect if family not found
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  /**
-   * Handles updating family information
-   */
-  const handleUpdateFamily = async (updates: { lastName: string; status: FamilyStatus }) => {
-    if (!family) return;
-
-    try {
-      await updateFamily(family.familyId, updates);
-      await loadFamilyDetails(); // Refresh
-      toast.success('Family updated successfully');
-    } catch (error) {
-      console.error('Error updating family:', error);
-      toast.error('Failed to update family');
-    }
-  };
+  const {
+    family,
+    parents,
+    children,
+    isLoading,
+    isDeleteConfirmOpen,
+    selectedPerson,
+    setSelectedPerson,
+    setIsDeleteConfirmOpen,
+    handleUpdateFamily,
+    handleUpdatePerson,
+    handleConfirmDelete,
+    handleAddChild,
+  } = useFamilyDetails(familyId);
 
   /**
    * Opens edit person drawer
@@ -89,74 +50,12 @@ export function FamilyDetailsPage() {
   };
 
   /**
-   * Handles updating person information
-   */
-  const handleUpdatePerson = async (updates: {
-    firstName: string;
-    phone?: string;
-    email?: string;
-  }) => {
-    if (!selectedPerson) return;
-
-    try {
-      await updatePerson(selectedPerson.personId, updates);
-      await loadFamilyDetails(); // Refresh
-      toast.success('Person updated successfully');
-    } catch (error) {
-      console.error('Error updating person:', error);
-      toast.error('Failed to update person');
-    }
-  };
-
-  /**
    * Opens delete confirmation dialog
    */
   const handleDeletePerson = (person: Person) => {
     setSelectedPerson(person);
     setIsDeleteConfirmOpen(true);
   };
-
-  /**
-   * Confirms person deletion
-   */
-  const handleConfirmDelete = async () => {
-    if (!selectedPerson) return;
-
-    try {
-      await deletePerson(selectedPerson.personId);
-      await loadFamilyDetails(); // Refresh
-      toast.success('Person deleted successfully');
-      setIsDeleteConfirmOpen(false);
-      setSelectedPerson(null);
-    } catch (error) {
-      console.error('Error deleting person:', error);
-      toast.error('Failed to delete person');
-    }
-  };
-
-  /**
-   * Handles adding a child
-   */
-  const handleAddChild = async (childData: {
-    firstName: string;
-    phone?: string;
-    email?: string;
-  }) => {
-    if (!family) return;
-
-    try {
-      await addChildToFamily(family.familyId, childData);
-      await loadFamilyDetails(); // Refresh
-      toast.success('Child added successfully');
-    } catch (error) {
-      console.error('Error adding child:', error);
-      toast.error('Failed to add child');
-    }
-  };
-
-  // Filter people
-  const parents = people.filter((p) => p.role === PERSON_ROLE.PARENT);
-  const children = people.filter((p) => p.role === PERSON_ROLE.CHILD);
 
   // Loading State
   if (isLoading) {
