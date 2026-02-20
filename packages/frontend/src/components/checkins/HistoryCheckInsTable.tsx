@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -7,14 +9,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Empty,
@@ -22,99 +16,72 @@ import {
   EmptyMedia,
   EmptyTitle,
   EmptyDescription,
+  EmptyContent,
 } from '@/components/ui/empty';
-import { getCompletedCheckIns, getFamilyById } from '@/utils/api';
+import { CheckoutDialog } from './CheckoutDialog';
 import type { EnrichedCheckIn } from '@/types';
-import { CHECKOUT_METHOD } from '@rhbc-crm/shared';
+import { Badge } from '@/components/ui/badge';
+import { getRoomBadge } from '@/utils/badges';
+import { useActiveCheckIns } from '@/hooks/useActiveCheckIns';
+import { TablePagination } from '@/components/TablePagination';
 
-interface HistoryCheckInsTableProps {
-  pageSize?: number;
+interface ActiveCheckInsTableProps {
+  limit?: number; // Limit results (for Dashboard)
+  showViewAll?: boolean; // Show "View All →" link
+  showActions?: boolean; // Show checkout buttons
+  pageSize?: number; // Items per page for pagination
 }
 
 /**
- * History Check-Ins Table Component
+ * Active Check-Ins Table Component
  *
- * Displays all completed check-ins (past records) with checkout information.
- * Shows who picked up each child and when. Sorted by checkout time (most recent first).
+ * Unified table component used on both Dashboard and Check Ins page.
+ * Supports pagination, limiting results, and optional view all link.
  */
-export function HistoryCheckInsTable({ pageSize = 10 }: HistoryCheckInsTableProps) {
-  const [checkIns, setCheckIns] = useState<EnrichedCheckIn[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export function HistoryCheckInsTable({
+  limit,
+  showViewAll = false,
+  showActions = true,
+  pageSize = 10,
+}: ActiveCheckInsTableProps) {
+  const navigate = useNavigate();
+  const [selectedCheckIn, setSelectedCheckIn] = useState<EnrichedCheckIn | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const { isLoading, checkIns, loadActiveCheckIns } = useActiveCheckIns();
 
-  // Load completed check-ins on component mount
-  useEffect(() => {
-    loadCompletedCheckIns();
-  }, []);
-
-  /**
-   * Fetches completed check-ins from dedicated endpoint.
-   * Enriches data with child and family names.
-   */
-  const loadCompletedCheckIns = async () => {
-    try {
-      setIsLoading(true);
-
-      // Use dedicated completed check-ins endpoint
-      const completedCheckIns = await getCompletedCheckIns();
-
-      // Enrich with child and family names
-      const enriched = await Promise.all(
-        completedCheckIns.map(async (checkIn: EnrichedCheckIn) => {
-          try {
-            const familyData = await getFamilyById(checkIn.familyId);
-            const child = familyData.people.find((p: any) => p.personId === checkIn.childId);
-
-            return {
-              ...checkIn,
-              childName: child?.firstName || 'Unknown',
-              familyName: familyData.family.lastName || 'Unknown',
-            };
-          } catch (error) {
-            console.error('Error loading family data:', error);
-            return {
-              ...checkIn,
-              childName: 'Unknown',
-              familyName: 'Unknown',
-            };
-          }
-        })
-      );
-
-      setCheckIns(enriched);
-    } catch (error) {
-      console.error('Error loading completed check-ins:', error);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleCheckOut = (checkIn: EnrichedCheckIn) => {
+    setSelectedCheckIn(checkIn);
   };
 
-  /**
-   * Formats a date as "Feb 10, 9:30 AM"
-   */
-  const formatDateTime = (isoString: string) => {
-    const date = new Date(isoString);
-    return date.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
+  const handleCloseDialog = () => {
+    setSelectedCheckIn(null);
   };
+
+  const handleCheckoutSuccess = () => {
+    setSelectedCheckIn(null);
+    loadActiveCheckIns();
+  };
+
+  const limitedCheckIns = limit ? checkIns.slice(0, limit) : checkIns;
 
   // Pagination calculations
-  const totalPages = Math.ceil(checkIns.length / pageSize);
+  const totalPages = Math.ceil(limitedCheckIns.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
-  const paginatedCheckIns = checkIns.slice(startIndex, endIndex);
+  const paginatedCheckIns = limitedCheckIns.slice(startIndex, endIndex);
 
-  // Show pagination only if we have more than one page
-  const showPagination = totalPages > 1;
+  // Show pagination only if we have more than one page and no limit
+  const showPagination = !limit && totalPages > 1;
 
-  // Loading State: Show skeleton placeholders
   if (isLoading) {
     return (
       <div className="space-y-4">
+        {showViewAll && (
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-6 w-24" />
+          </div>
+        )}
         <div className="border rounded-lg">
           <Table>
             <TableHeader>
@@ -122,14 +89,13 @@ export function HistoryCheckInsTable({ pageSize = 10 }: HistoryCheckInsTableProp
                 <TableHead>Child</TableHead>
                 <TableHead>Family</TableHead>
                 <TableHead>Room</TableHead>
+                <TableHead>PIN</TableHead>
                 <TableHead>Checked In</TableHead>
-                <TableHead>Checked Out</TableHead>
-                <TableHead>Picked Up By</TableHead>
-                <TableHead>Method</TableHead>
+                {showActions && <TableHead className="w-[120px]"></TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {Array.from({ length: 10 }).map((_, index) => (
+              {Array.from({ length: 5 }).map((_, index) => (
                 <TableRow key={index}>
                   <TableCell>
                     <Skeleton className="h-4 w-24" />
@@ -141,17 +107,16 @@ export function HistoryCheckInsTable({ pageSize = 10 }: HistoryCheckInsTableProp
                     <Skeleton className="h-6 w-20" />
                   </TableCell>
                   <TableCell>
-                    <Skeleton className="h-4 w-28" />
+                    <Skeleton className="h-4 w-12" />
                   </TableCell>
                   <TableCell>
-                    <Skeleton className="h-4 w-28" />
+                    <Skeleton className="h-4 w-20" />
                   </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-4 w-32" />
-                  </TableCell>
-                  <TableCell>
-                    <Skeleton className="h-6 w-16" />
-                  </TableCell>
+                  {showActions && (
+                    <TableCell>
+                      <Skeleton className="h-9 w-24" />
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
@@ -161,124 +126,99 @@ export function HistoryCheckInsTable({ pageSize = 10 }: HistoryCheckInsTableProp
     );
   }
 
-  // Empty State: No history records found
   if (checkIns.length === 0) {
     return (
       <Empty>
         <EmptyHeader>
-          <EmptyMedia>📋</EmptyMedia>
-          <EmptyTitle>No check-in history</EmptyTitle>
-          <EmptyDescription>
-            Past check-ins will appear here once children are checked out.
-          </EmptyDescription>
+          <EmptyMedia>👶</EmptyMedia>
+          <EmptyTitle>No active check-ins</EmptyTitle>
+          <EmptyDescription>There are no children currently checked in.</EmptyDescription>
         </EmptyHeader>
+        <EmptyContent>
+          <Button onClick={() => navigate('/checkins/new')}>Check In Child</Button>
+        </EmptyContent>
       </Empty>
     );
   }
 
-  // Main Table: Display completed check-ins with pagination
   return (
-    <div className="space-y-4">
-      <div className="border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Child</TableHead>
-              <TableHead>Family</TableHead>
-              <TableHead>Room</TableHead>
-              <TableHead>Checked In</TableHead>
-              <TableHead>Checked Out</TableHead>
-              <TableHead>Picked Up By</TableHead>
-              <TableHead>Method</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedCheckIns.map((checkIn) => (
-              <TableRow key={checkIn.checkInId}>
-                {/* Child Name */}
-                <TableCell className="font-medium">{checkIn.childName || 'Unknown'}</TableCell>
-
-                {/* Family Name */}
-                <TableCell>{checkIn.familyName || 'Unknown'}</TableCell>
-
-                {/* Room */}
-                <TableCell>
-                  <span className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
-                    {checkIn.room}
-                  </span>
-                </TableCell>
-
-                {/* Check-In Time */}
-                <TableCell className="text-slate-600">
-                  {formatDateTime(checkIn.checkInTime)}
-                </TableCell>
-
-                {/* Check-Out Time */}
-                <TableCell className="text-slate-600">
-                  {checkIn.checkOutTime ? formatDateTime(checkIn.checkOutTime) : '—'}
-                </TableCell>
-
-                {/* Picked Up By */}
-                <TableCell>
-                  {checkIn.checkedOutBy ? (
-                    <span className="text-slate-900">{checkIn.checkedOutBy}</span>
-                  ) : (
-                    <span className="text-slate-400">—</span>
-                  )}
-                </TableCell>
-
-                {/* Checkout Method */}
-                <TableCell>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      checkIn.checkOutMethod === CHECKOUT_METHOD.PIN
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-orange-100 text-orange-800'
-                    }`}
-                  >
-                    {checkIn.checkOutMethod === CHECKOUT_METHOD.PIN ? 'PIN' : 'Staff'}
-                  </span>
-                </TableCell>
+    <>
+      <div className="space-y-4">
+        {showViewAll && (
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-slate-900">
+              Active Check-Ins ({checkIns.length} {checkIns.length === 1 ? 'child' : 'children'})
+            </h2>
+            <Button variant="link" onClick={() => navigate('/checkins')} className="text-blue-600">
+              View All →
+            </Button>
+          </div>
+        )}
+        <div className="border rounded-lg">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Child</TableHead>
+                <TableHead>Family</TableHead>
+                <TableHead>Room</TableHead>
+                <TableHead>PIN</TableHead>
+                <TableHead>Checked In</TableHead>
+                {showActions && (
+                  <TableHead className="w-[120px]">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                )}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {paginatedCheckIns.map((checkIn) => {
+                const checkInTime = new Date(checkIn.checkInTime).toLocaleTimeString('en-US', {
+                  hour: 'numeric',
+                  minute: '2-digit',
+                });
+                const badge = getRoomBadge(checkIn.room);
+                return (
+                  <TableRow key={checkIn.checkInId}>
+                    <TableCell className="font-medium">{checkIn.childName || 'Unknown'}</TableCell>
+                    <TableCell>{checkIn.familyName || 'Unknown'}</TableCell>
+                    <TableCell>
+                      <Badge className={badge.className}>{badge.label}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <span className="font-mono font-semibold text-slate-900">
+                        {checkIn.checkOutPin || '—'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-slate-600">{checkInTime}</TableCell>
+                    {showActions && (
+                      <TableCell>
+                        <Button variant="ghost" size="sm" onClick={() => handleCheckOut(checkIn)}>
+                          Check Out
+                        </Button>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+        {showPagination && (
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        )}
       </div>
-
-      {/* Pagination */}
-      {showPagination && (
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-              />
-            </PaginationItem>
-
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <PaginationItem key={page}>
-                <PaginationLink
-                  onClick={() => setCurrentPage(page)}
-                  isActive={currentPage === page}
-                  className="cursor-pointer"
-                >
-                  {page}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
-
-            <PaginationItem>
-              <PaginationNext
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                className={
-                  currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'
-                }
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+      {showActions && (
+        <CheckoutDialog
+          checkIn={selectedCheckIn}
+          open={!!selectedCheckIn}
+          onClose={handleCloseDialog}
+          onSuccess={handleCheckoutSuccess}
+        />
       )}
-    </div>
+    </>
   );
 }

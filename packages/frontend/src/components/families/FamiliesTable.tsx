@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import type { Family } from '@rhbc-crm/shared';
+import { useNavigate } from 'react-router-dom';
 import { MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,14 +18,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Empty,
@@ -32,9 +26,9 @@ import {
   EmptyTitle,
   EmptyDescription,
 } from '@/components/ui/empty';
-import type { Family } from '@rhbc-crm/shared';
-import { useNavigate } from 'react-router-dom';
-import { FAMILY_STATUS } from '@rhbc-crm/shared';
+import { Badge } from '@/components/ui/badge';
+import { getFamilyStatusBadge } from '@/utils/badges';
+import { TablePagination } from '@/components/TablePagination';
 
 interface FamiliesTableProps {
   families: Family[];
@@ -60,22 +54,17 @@ export function FamiliesTable({
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Pagination calculations
   const totalPages = Math.ceil(families.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
   const paginatedFamilies = families.slice(startIndex, endIndex);
 
-  // Show pagination only if we have more than one page
   const showPagination = totalPages > 1;
 
-  // Reset to page 1 when families list changes (e.g., after filtering)
-  // This prevents being on page 5 when filter only returns 2 families
-  useState(() => {
+  useEffect(() => {
     setCurrentPage(1);
-  });
+  }, [families]);
 
-  // Loading State: Show skeleton placeholders while fetching
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -109,7 +98,6 @@ export function FamiliesTable({
     );
   }
 
-  // Empty State: No families found (after filtering)
   if (families.length === 0) {
     return (
       <Empty>
@@ -124,7 +112,6 @@ export function FamiliesTable({
     );
   }
 
-  // Main Table: Display paginated families with actions
   return (
     <div className="space-y-4">
       <div className="border rounded-lg">
@@ -139,94 +126,57 @@ export function FamiliesTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginatedFamilies.map((family) => (
-              <TableRow key={family.familyId} className="cursor-pointer hover:bg-slate-50">
-                {/* Family Name - Clickable to view details */}
-                <TableCell
-                  className="font-medium"
-                  onClick={() => navigate(`/families/${family.familyId}`)} // ← Change this
-                >
-                  {family.lastName} Family
-                </TableCell>
-
-                {/* Status Badge */}
-                <TableCell onClick={() => navigate(`/families/${family.familyId}`)}>
-                  <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      family.status === FAMILY_STATUS.MEMBER
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-blue-100 text-blue-800'
-                    }`}
+            {paginatedFamilies.map((family) => {
+              const badge = getFamilyStatusBadge(family.status);
+              return (
+                <TableRow key={family.familyId} className="cursor-pointer hover:bg-slate-50">
+                  <TableCell
+                    className="font-medium"
+                    onClick={() => navigate(`/families/${family.familyId}`)} // ← Change this
                   >
-                    {family.status === FAMILY_STATUS.MEMBER ? 'Member' : 'Guest'}
-                  </span>
-                </TableCell>
-
-                {/* Actions Dropdown Menu */}
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Open menu</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => navigate(`/families/${family.familyId}`)}>
-                        View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onAddChild(family)}>
-                        Add Child
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => onDelete(family)}
-                        className="text-red-600 focus:text-red-600"
-                      >
-                        Delete Family
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
+                    {family.lastName} Family
+                  </TableCell>
+                  <TableCell onClick={() => navigate(`/families/${family.familyId}`)}>
+                    <Badge className={badge.className}>{badge.label}</Badge>
+                  </TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Open menu</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => navigate(`/families/${family.familyId}`)}>
+                          View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onAddChild(family)}>
+                          Add Child
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => onDelete(family)}
+                          className="text-red-600 focus:text-red-600"
+                        >
+                          Delete Family
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
 
-      {/* Pagination */}
       {showPagination && (
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-              />
-            </PaginationItem>
-
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <PaginationItem key={page}>
-                <PaginationLink
-                  onClick={() => setCurrentPage(page)}
-                  isActive={currentPage === page}
-                  className="cursor-pointer"
-                >
-                  {page}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
-
-            <PaginationItem>
-              <PaginationNext
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                className={
-                  currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'
-                }
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
+        <TablePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       )}
     </div>
   );

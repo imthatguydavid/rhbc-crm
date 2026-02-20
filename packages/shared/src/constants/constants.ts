@@ -19,6 +19,8 @@ export const CHECKOUT_METHOD = {
   PIN: 'pin',
   /** Staff manually checked out child via admin portal */
   STAFF_OVERRIDE: 'manual_override',
+  /** null: Child not yet checked out */
+  NULL: null,
 } as const;
 
 /**
