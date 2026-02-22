@@ -52,13 +52,6 @@ export function FamilySearchStep({ onFamilySelected }: FamilySearchStepProps) {
     }
   };
 
-  /**
-   * Handles family selection
-   */
-  const handleSelectFamily = (family: Family) => {
-    onFamilySelected(family);
-  };
-
   const noSearchResultsFound = !isSearching && hasSearched && families.length === 0;
 
   return (
@@ -86,7 +79,6 @@ export function FamilySearchStep({ onFamilySelected }: FamilySearchStepProps) {
           <p className="mt-2 text-slate-600">Searching families...</p>
         </div>
       )}
-
       {noSearchResultsFound && (
         <Empty>
           <EmptyHeader>
@@ -98,7 +90,6 @@ export function FamilySearchStep({ onFamilySelected }: FamilySearchStepProps) {
           </EmptyHeader>
         </Empty>
       )}
-
       {!isSearching && families.length > 0 && (
         <div className="space-y-2">
           <p className="text-sm text-slate-600">
@@ -110,7 +101,7 @@ export function FamilySearchStep({ onFamilySelected }: FamilySearchStepProps) {
               return (
                 <button
                   key={family.familyId}
-                  onClick={() => handleSelectFamily(family)}
+                  onClick={() => onFamilySelected(family)}
                   className="w-full text-left p-4 rounded-lg border border-slate-200 hover:border-blue-500 hover:bg-blue-50 transition-colors"
                 >
                   <div className="flex items-center justify-between">
@@ -128,7 +119,6 @@ export function FamilySearchStep({ onFamilySelected }: FamilySearchStepProps) {
           </div>
         </div>
       )}
-
       {!hasSearched && (
         <div className="text-center py-12 text-slate-500">
           <Search className="h-12 w-12 mx-auto mb-4 text-slate-300" />

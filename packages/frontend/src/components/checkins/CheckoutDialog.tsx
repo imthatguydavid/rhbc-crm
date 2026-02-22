@@ -54,26 +54,16 @@ export function CheckoutDialog({ checkIn, open, onClose, onSuccess }: CheckoutDi
       return;
     }
 
-    if (!checkIn) {
-      toast.error('No check-in selected');
-      return;
-    }
-
     try {
       setIsLoading(true);
 
-      await adminCheckOut(checkIn.checkInId, name.trim());
+      await adminCheckOut(checkIn!.checkInId, name.trim());
       console.log('Checking out:', {
-        checkInId: checkIn.checkInId,
-        childName: checkIn.childName,
+        checkInId: checkIn?.checkInId,
+        childName: checkIn?.childName,
         pickedUpBy: name.trim(),
       });
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      // Success!
-      toast.success(`${checkIn.childName} checked out successfully`);
+      toast.success(`${checkIn?.childName} checked out successfully`);
       onSuccess();
       handleOpenChange(false);
     } catch (err) {
@@ -96,7 +86,6 @@ export function CheckoutDialog({ checkIn, open, onClose, onSuccess }: CheckoutDi
 
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
-            {/* Child Info */}
             <div className="rounded-lg bg-slate-50 p-4 border">
               <div className="space-y-1">
                 <p className="text-lg font-semibold text-slate-900">
@@ -117,8 +106,6 @@ export function CheckoutDialog({ checkIn, open, onClose, onSuccess }: CheckoutDi
                 </div>
               </div>
             </div>
-
-            {/* Name Input */}
             <div className="space-y-2">
               <Label htmlFor="name">Picked Up By *</Label>
               <Input
