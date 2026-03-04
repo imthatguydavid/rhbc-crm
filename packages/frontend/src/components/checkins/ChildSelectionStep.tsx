@@ -9,7 +9,7 @@ import {
   EmptyDescription,
 } from '@/components/ui/empty';
 import { getFamilyById } from '@/utils/api';
-import type { Family, Person } from '@rhbc-crm/shared';
+import { type Family, type Person, PERSON_ROLE } from '@rhbc-crm/shared';
 
 interface ChildSelectionStepProps {
   family: Family;
@@ -47,8 +47,7 @@ export function ChildSelectionStep({ family, onChildSelected, onBack }: ChildSel
     }
   };
 
-  // Filter for children only
-  const children = people.filter((p) => p.role === 'child');
+  const children = people.filter((p) => p.role === PERSON_ROLE.CHILD);
 
   if (isLoading) {
     return (
@@ -83,18 +82,14 @@ export function ChildSelectionStep({ family, onChildSelected, onBack }: ChildSel
 
   return (
     <div className="space-y-6">
-      {/* Family Info */}
       <div className="rounded-lg bg-slate-50 p-4 border">
         <p className="text-sm text-slate-600">Selected Family</p>
         <p className="font-semibold text-slate-900">{family.lastName} Family</p>
       </div>
-
-      {/* Children List */}
       <div className="space-y-2">
         <p className="text-sm text-slate-600">
           {children.length} {children.length === 1 ? 'child' : 'children'}
         </p>
-
         <div className="space-y-2">
           {children.map((child) => (
             <button
@@ -113,8 +108,6 @@ export function ChildSelectionStep({ family, onChildSelected, onBack }: ChildSel
           ))}
         </div>
       </div>
-
-      {/* Back Button */}
       <Button variant="outline" onClick={onBack} className="gap-2">
         <ArrowLeft className="h-4 w-4" />
         Back to Search
