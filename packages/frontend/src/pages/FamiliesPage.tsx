@@ -91,7 +91,7 @@ export function FamiliesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-slate-900">Families</h1>
-        <NewFamilyButton />
+        <NewFamilyButton onSuccess={loadFamilies} />
       </div>
 
       {/* Error Message */}

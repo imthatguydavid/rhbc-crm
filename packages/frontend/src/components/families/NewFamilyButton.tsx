@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { AddFamilyDialog } from '@/components/AddFamilyDialog';
 import { createFamily } from '@/utils/api';
 import type { Family } from '@rhbc-crm/shared';
+import { toast } from 'sonner';
 
 interface NewFamilyButtonProps {
   onSuccess?: () => void;
@@ -29,7 +30,6 @@ export function NewFamilyButton({
   className = '',
 }: NewFamilyButtonProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   /**
    * Opens the dialog
@@ -43,7 +43,6 @@ export function NewFamilyButton({
    */
   const handleClose = () => {
     setIsDialogOpen(false);
-    setError(null);
   };
 
   /**
@@ -54,8 +53,6 @@ export function NewFamilyButton({
     parentData: { firstName: string; phone: string; email?: string }
   ) => {
     try {
-      setError(null);
-
       // Create family via API
       await createFamily({
         lastName: family.lastName,
@@ -73,7 +70,7 @@ export function NewFamilyButton({
         onSuccess();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create family');
+      toast.error(err instanceof Error ? err.message : 'Failed to create family');
       console.error('Error creating family:', err);
     }
   };
@@ -86,9 +83,6 @@ export function NewFamilyButton({
       </Button>
 
       <AddFamilyDialog open={isDialogOpen} onClose={handleClose} onAddFamily={handleAddFamily} />
-
-      {/* Error Display (if needed) */}
-      {error && <div className="mt-2 rounded-md bg-red-50 p-3 text-sm text-red-800">{error}</div>}
     </>
   );
 }
