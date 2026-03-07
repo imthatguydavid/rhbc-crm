@@ -6,6 +6,7 @@ import { FamilySearch } from '@/components/kiosk/FamilySearch';
 import { ChildSelector } from '@/components/kiosk/ChildSelector';
 import { PINDisplay } from '@/components/kiosk/PINDisplay';
 import { getFamilyById, bulkCheckInChildren } from '@/utils/api';
+import { PERSON_ROLE } from '@rhbc-crm/shared';
 
 type Step = 'search' | 'select' | 'pin';
 
@@ -25,7 +26,7 @@ export function KioskCheckInPage() {
 
       // Load family members
       const data = await getFamilyById(family.familyId);
-      const kids = data.people.filter((p: Person) => p.role === 'child');
+      const kids = data.people.filter((p: Person) => p.role === PERSON_ROLE.CHILD);
 
       if (kids.length === 0) {
         setError('This family has no children registered.');
