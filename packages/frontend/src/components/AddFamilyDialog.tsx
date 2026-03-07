@@ -42,7 +42,10 @@ type FormValues = z.infer<typeof formSchema>;
 interface AddFamilyDialogProps {
   open: boolean;
   onClose: () => void;
-  onAddFamily: (family: Family, parentData: { firstName: string; phone: string; email?: string }) => void;
+  onAddFamily: (
+    family: Family,
+    parentData: { firstName: string; phone: string; email?: string }
+  ) => Promise<void>;
 }
 
 export function AddFamilyDialog({ open, onClose, onAddFamily }: AddFamilyDialogProps) {
@@ -59,16 +62,12 @@ export function AddFamilyDialog({ open, onClose, onAddFamily }: AddFamilyDialogP
     },
   });
 
-  const onSubmit = (values: FormValues) => {
+  const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
-
-    // Generate IDs
-    const familyId = `fam-${Date.now()}`;
     const now = new Date().toISOString();
 
-    // Create family
     const newFamily: Family = {
-      familyId,
+      familyId: '',
       lastName: values.lastName,
       status: values.status,
       createdAt: now,
@@ -76,20 +75,18 @@ export function AddFamilyDialog({ open, onClose, onAddFamily }: AddFamilyDialogP
       pk: 'FAMILY',
     };
 
-    // Parent data to be added separately
     const parentData = {
       firstName: values.parentFirstName,
       phone: values.parentPhone,
       email: values.parentEmail || undefined,
     };
-
-    // Call parent component's handler
-    onAddFamily(newFamily, parentData);
-
-    // Reset form and close
-    form.reset();
-    setIsSubmitting(false);
-    onClose();
+    try {
+      await onAddFamily(newFamily, parentData);
+      form.reset();
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClose = () => {
@@ -196,11 +193,7 @@ export function AddFamilyDialog({ open, onClose, onAddFamily }: AddFamilyDialogP
                   <FormItem className="mt-4">
                     <FormLabel>Email (optional)</FormLabel>
                     <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="john.smith@email.com"
-                        {...field}
-                      />
+                      <Input type="email" placeholder="john.smith@email.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -210,19 +203,10 @@ export function AddFamilyDialog({ open, onClose, onAddFamily }: AddFamilyDialogP
 
             {/* Actions */}
             <div className="flex gap-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClose}
-                className="flex-1"
-              >
+              <Button type="button" variant="outline" onClick={handleClose} className="flex-1">
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                className="flex-1"
-                disabled={isSubmitting}
-              >
+              <Button type="submit" className="flex-1" disabled={isSubmitting}>
                 {isSubmitting ? 'Adding...' : 'Add Family'}
               </Button>
             </div>

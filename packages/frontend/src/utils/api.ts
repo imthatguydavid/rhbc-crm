@@ -23,13 +23,26 @@ import type { CheckIn } from '@rhbc-crm/shared';
  * console.log(`Found ${families.length} families`);
  * ```
  */
+
+/**
+ * Parses error response from API and throws with meaningful message
+ */
+async function handleErrorResponse(response: Response, fallbackMessage: string): Promise<never> {
+  try {
+    const error = await response.json();
+    throw new Error(error.error || error.message || fallbackMessage);
+  } catch {
+    throw new Error(fallbackMessage);
+  }
+}
+
 export async function getFamilies() {
   const response = await fetch(getApiUrl(API_ENDPOINTS.GET_FAMILIES), {
     ...API_CONFIG,
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch families: ${response.statusText}`);
+    await handleErrorResponse(response, 'Failed to fetch family');
   }
 
   const data = await response.json();
@@ -85,11 +98,10 @@ export async function createFamily(familyData: {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to create family: ${response.statusText}`);
+    await handleErrorResponse(response, 'Failed to create family');
   }
 
-  const data = await response.json();
-  return data; // Returns { family, parent }
+  return await response.json(); // Returns { family, parent }
 }
 
 /**
@@ -125,11 +137,10 @@ export async function getFamilyById(familyId: string) {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch family: ${response.statusText}`);
+    await handleErrorResponse(response, 'Failed to fetch family');
   }
 
-  const data = await response.json();
-  return data; // Returns { family, people }
+  return await response.json(); // Returns { family, people }
 }
 
 /**
@@ -172,7 +183,7 @@ export async function checkInChild(data: { childId: string; familyId: string; ro
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to check in child: ${response.statusText}`);
+    await handleErrorResponse(response, 'Failed to check in child');
   }
 
   return await response.json();
@@ -211,7 +222,7 @@ export async function getActiveCheckIns() {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to get active check-ins: ${response.statusText}`);
+    await handleErrorResponse(response, 'Failed to get active check-ins');
   }
 
   const data = await response.json();
@@ -261,7 +272,7 @@ export async function checkOutChild(data: { checkInId: string; pin: string }) {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to check out child: ${response.statusText}`);
+    await handleErrorResponse(response, 'Failed to check out child');
   }
 
   return await response.json();
@@ -290,7 +301,7 @@ export async function addChildToFamily(
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to add child: ${response.statusText}`);
+    await handleErrorResponse(response, 'Failed to add child');
   }
 
   const data = await response.json();
@@ -320,7 +331,7 @@ export async function updatePerson(
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to update person: ${response.statusText}`);
+    await handleErrorResponse(response, 'Failed to update person');
   }
 
   const data = await response.json();
@@ -349,7 +360,7 @@ export async function updateFamily(
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to update family: ${response.statusText}`);
+    await handleErrorResponse(response, 'Failed to update family');
   }
 
   const data = await response.json();
@@ -370,8 +381,7 @@ export async function deletePerson(personId: string) {
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || `Failed to delete person: ${response.statusText}`);
+    await handleErrorResponse(response, 'Failed to delete person');
   }
 
   const data = await response.json();
@@ -399,7 +409,7 @@ export async function searchFamilies(filters?: { search?: string; status?: 'memb
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to search families: ${response.statusText}`);
+    await handleErrorResponse(response, 'Failed to search families');
   }
 
   const data = await response.json();
@@ -422,7 +432,7 @@ export async function bulkCheckInChildren(data: {
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to bulk check-in: ${response.statusText}`);
+    await handleErrorResponse(response, 'Failed to bulk check-in');
   }
 
   return await response.json();
@@ -440,8 +450,7 @@ export async function checkOutByPin(pin: string, checkedOutBy: string) {
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || `Failed to check out: ${response.statusText}`);
+    await handleErrorResponse(response, 'Failed to check out');
   }
 
   return await response.json();
@@ -458,8 +467,7 @@ export async function validatePinForCheckout(pin: string) {
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || `Failed to validate PIN: ${response.statusText}`);
+    await handleErrorResponse(response, 'Failed to validate PIN');
   }
 
   return await response.json();
@@ -477,8 +485,7 @@ export async function adminCheckOut(checkInId: string, checkedOutBy: string) {
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || `Failed to check out: ${response.statusText}`);
+    await handleErrorResponse(response, 'Failed to check out');
   }
 
   return await response.json();
@@ -496,7 +503,7 @@ export async function getCompletedCheckIns(): Promise<CheckIn[]> {
   });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch completed check-ins');
+    await handleErrorResponse(response, 'Failed to fetch completed check-ins');
   }
 
   const data = await response.json();

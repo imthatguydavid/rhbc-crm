@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/empty';
 import { getFamilyById } from '@/utils/api';
 import { type Family, type Person, PERSON_ROLE } from '@rhbc-crm/shared';
+import { toast } from 'sonner';
 
 interface ChildSelectionStepProps {
   family: Family;
@@ -39,8 +40,9 @@ export function ChildSelectionStep({ family, onChildSelected, onBack }: ChildSel
       setIsLoading(true);
       const data = await getFamilyById(family.familyId);
       setPeople(data.people);
-    } catch (error) {
-      console.error('Error loading family members:', error);
+    } catch (err) {
+      console.error('Error loading family members:', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to load family members');
       setPeople([]);
     } finally {
       setIsLoading(false);
