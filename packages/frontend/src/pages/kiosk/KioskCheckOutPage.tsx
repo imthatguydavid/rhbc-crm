@@ -203,4 +203,3 @@ export function KioskCheckOutPage() {
     </div>
   );
 }
-8379;

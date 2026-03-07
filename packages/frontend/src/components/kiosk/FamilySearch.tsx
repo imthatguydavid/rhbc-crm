@@ -5,6 +5,7 @@ import type { Family } from '@rhbc-crm/shared';
 import { searchFamilies } from '@/utils/api';
 import { getFamilyStatusBadge } from '@/utils/badges';
 import { FAMILY_STATUS } from '@rhbc-crm/shared';
+import { toast } from 'sonner';
 
 interface FamilySearchProps {
   onSelectFamily: (family: Family) => void;
@@ -29,6 +30,7 @@ export function FamilySearch({ onSelectFamily }: FamilySearchProps) {
         setResults(families.slice(0, 4)); // Max 4 results
       } catch (error) {
         console.error('Search error:', error);
+        toast.error(error instanceof Error ? error.message : 'Failed to search families');
         setResults([]);
       } finally {
         setIsLoading(false);
