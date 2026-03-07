@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getCompletedCheckIns, getFamilyById } from '@/utils/api';
 import type { EnrichedCheckIn } from '@/types';
+import { toast } from 'sonner';
 
 export function useHistoryCheckIns() {
   const [isLoading, setIsLoading] = useState(true);
@@ -39,7 +40,8 @@ export function useHistoryCheckIns() {
 
       setCheckIns(enriched);
     } catch (error) {
-      console.error('Error loading active check-ins:', error);
+      console.error('Error loading all check-ins:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to get all check-ins.');
     } finally {
       setIsLoading(false);
     }

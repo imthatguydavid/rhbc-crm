@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getActiveCheckIns, getFamilyById } from '@/utils/api';
 import type { EnrichedCheckIn } from '@/types';
+import { toast } from 'sonner';
 
 export function useActiveCheckIns() {
   const [isLoading, setIsLoading] = useState(true);
@@ -40,6 +41,7 @@ export function useActiveCheckIns() {
       setCheckIns(enriched);
     } catch (error) {
       console.error('Error loading active check-ins:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to get active check-ins');
     } finally {
       setIsLoading(false);
     }

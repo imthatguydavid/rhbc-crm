@@ -29,7 +29,7 @@ export function useFamilyDetails(familyId: string | undefined) {
       setPeople(data.people);
     } catch (error) {
       console.error('Error loading family details:', error);
-      toast.error('Failed to load family details');
+      toast.error(error instanceof Error ? error.message : 'Failed to load family details');
       navigate('/families');
     } finally {
       setIsLoading(false);
@@ -54,7 +54,7 @@ export function useFamilyDetails(familyId: string | undefined) {
       toast.success('Family updated successfully');
     } catch (error) {
       console.error('Error updating family:', error);
-      toast.error('Failed to update family');
+      toast.error(error instanceof Error ? error.message : 'Failed to update family');
     }
   };
 
@@ -71,7 +71,7 @@ export function useFamilyDetails(familyId: string | undefined) {
       toast.success('Person updated successfully');
     } catch (error) {
       console.error('Error updating person:', error);
-      toast.error('Failed to update person');
+      toast.error(error instanceof Error ? error.message : 'Failed to update person');
     }
   };
 
@@ -86,7 +86,7 @@ export function useFamilyDetails(familyId: string | undefined) {
       setSelectedPerson(null);
     } catch (error) {
       console.error('Error deleting person:', error);
-      toast.error('Failed to delete person');
+      toast.error(error instanceof Error ? error.message : 'Failed to delete person');
     }
   };
 
@@ -103,7 +103,7 @@ export function useFamilyDetails(familyId: string | undefined) {
       toast.success('Child added successfully');
     } catch (error) {
       console.error('Error adding child:', error);
-      toast.error('Failed to add child');
+      toast.error(error instanceof Error ? error.message : 'Failed to add child');
     }
   };
 
