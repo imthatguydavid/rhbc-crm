@@ -29,5 +29,13 @@
     "eslint": "^9.39.2",
     "prettier": "^3.2.4",
     "typescript": "^5.9.3"
+  },
+  "dependenciesMeta": {
+    "serverless-offline@14.4.0": {
+      "unplugged": true
+    },
+    "tsx@4.21.0": {
+      "unplugged": true
+    }
   }
 }

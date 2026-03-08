@@ -131,6 +131,9 @@ export async function getAllFamilies(filters?: {
     expressionAttributeValues[':status'] = filters.status;
   }
 
+  // Always exclude soft-deleted families
+  filterExpressions.push('attribute_not_exists(deletedAt)');
+
   // Query DynamoDB
   const queryParams: any = {
     TableName: Tables.FAMILIES,
@@ -146,7 +149,9 @@ export async function getAllFamilies(filters?: {
   // Add filter expression if we have filters
   if (filterExpressions.length > 0) {
     queryParams.FilterExpression = filterExpressions.join(' AND ');
-    queryParams.ExpressionAttributeNames = expressionAttributeNames;
+    if (Object.keys(expressionAttributeNames).length > 0) {
+      queryParams.ExpressionAttributeNames = expressionAttributeNames;
+    }
   }
 
   const result = await dynamoDb.send(new QueryCommand(queryParams));
@@ -520,4 +525,71 @@ export async function deletePerson(personId: string): Promise<Person> {
   );
 
   return result.Attributes as Person;
+}
+
+/**
+ * Soft deletes a family and all its members.
+ *
+ * Sets deletedAt on the family record and cascades to all people
+ * in the family. Data is preserved but filtered from queries.
+ *
+ * @param familyId - Family ID to soft delete
+ * @returns Promise resolving to updated Family record with deletedAt set
+ * @throws Error if family doesn't exist or already deleted
+ */
+export async function deleteFamily(familyId: string): Promise<Family> {
+  // 1. Verify family exists
+  const existingFamily = await getFamilyById(familyId);
+  if (!existingFamily) {
+    throw new Error('Family not found');
+  }
+
+  // 2. Check if already deleted
+  if ((existingFamily as any).deletedAt) {
+    throw new Error('Family already deleted');
+  }
+
+  const now = new Date().toISOString();
+
+  // 3. Cascade soft delete all people in the family
+  const people = await getPeopleByFamily(familyId);
+  await Promise.all(
+    people.map((person) =>
+      dynamoDb.send(
+        new UpdateCommand({
+          TableName: Tables.PEOPLE,
+          Key: { personId: person.personId },
+          UpdateExpression: 'SET #deletedAt = :deletedAt, #updatedAt = :updatedAt',
+          ExpressionAttributeNames: {
+            '#deletedAt': 'deletedAt',
+            '#updatedAt': 'updatedAt',
+          },
+          ExpressionAttributeValues: {
+            ':deletedAt': now,
+            ':updatedAt': now,
+          },
+        })
+      )
+    )
+  );
+
+  // 4. Soft delete the family
+  const result = await dynamoDb.send(
+    new UpdateCommand({
+      TableName: Tables.FAMILIES,
+      Key: { familyId },
+      UpdateExpression: 'SET #deletedAt = :deletedAt, #updatedAt = :updatedAt',
+      ExpressionAttributeNames: {
+        '#deletedAt': 'deletedAt',
+        '#updatedAt': 'updatedAt',
+      },
+      ExpressionAttributeValues: {
+        ':deletedAt': now,
+        ':updatedAt': now,
+      },
+      ReturnValues: 'ALL_NEW',
+    })
+  );
+
+  return result.Attributes as Family;
 }

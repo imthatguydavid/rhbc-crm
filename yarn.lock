@@ -4017,6 +4017,7 @@ __metadata:
     serverless: "npm:^4.31.2"
     serverless-offline: "npm:^14.4.0"
     ts-jest: "npm:^29.1.0"
+    tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
   languageName: unknown
   linkType: soft
@@ -9312,6 +9313,11 @@ __metadata:
     eslint: "npm:^9.39.2"
     prettier: "npm:^3.2.4"
     typescript: "npm:^5.9.3"
+  dependenciesMeta:
+    serverless-offline@14.4.0:
+      unplugged: true
+    tsx@4.21.0:
+      unplugged: true
   languageName: unknown
   linkType: soft
 
@@ -9945,7 +9951,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tsx@npm:^4.17.0":
+"tsx@npm:^4.17.0, tsx@npm:^4.21.0":
   version: 4.21.0
   resolution: "tsx@npm:4.21.0"
   dependencies:

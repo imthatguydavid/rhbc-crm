@@ -36,6 +36,7 @@
     "serverless": "^4.31.2",
     "serverless-offline": "^14.4.0",
     "ts-jest": "^29.1.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
 }

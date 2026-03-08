@@ -15,6 +15,7 @@ import {
   deletePerson,
   getPeopleByFamily,
   getAllFamilies,
+  deleteFamily
 } from '../services/familyService.js';
 
 const ddbMock = mockClient(DynamoDBDocumentClient);
@@ -470,6 +471,90 @@ describe('familyService', () => {
       const result = await getAllFamilies({ search: 'nonexistent' });
 
       expect(result).toHaveLength(0);
+    });
+  });
+  describe('deleteFamily', () => {
+    it('should soft delete a family and all its members', async () => {
+      // Mock family exists
+      ddbMock.on(GetCommand).resolves({
+        Item: {
+          familyId: 'fam-123',
+          lastName: 'Smith',
+          status: 'member',
+          pk: 'FAMILY',
+        },
+      });
+
+      // Mock getPeopleByFamily returning two people
+      ddbMock.on(QueryCommand).resolves({
+        Items: [
+          { personId: 'per-1', familyId: 'fam-123', firstName: 'John' },
+          { personId: 'per-2', familyId: 'fam-123', firstName: 'Emma' },
+        ],
+      });
+
+      // Mock all UpdateCommands (2 people + 1 family = 3 total)
+      ddbMock.on(UpdateCommand).resolves({
+        Attributes: {
+          familyId: 'fam-123',
+          lastName: 'Smith',
+          deletedAt: '2026-03-08T00:00:00.000Z',
+          updatedAt: '2026-03-08T00:00:00.000Z',
+        },
+      });
+
+      const result = await deleteFamily('fam-123');
+
+      expect(result.familyId).toBe('fam-123');
+      expect(result.deletedAt).toBeDefined();
+      // 2 people + 1 family = 3 UpdateCommands
+      expect(ddbMock.commandCalls(UpdateCommand).length).toBe(3);
+    });
+
+    it('should soft delete a family with no members', async () => {
+      ddbMock.on(GetCommand).resolves({
+        Item: {
+          familyId: 'fam-123',
+          lastName: 'Smith',
+          status: 'member',
+          pk: 'FAMILY',
+        },
+      });
+
+      // No people in family
+      ddbMock.on(QueryCommand).resolves({ Items: [] });
+
+      ddbMock.on(UpdateCommand).resolves({
+        Attributes: {
+          familyId: 'fam-123',
+          deletedAt: '2026-03-08T00:00:00.000Z',
+          updatedAt: '2026-03-08T00:00:00.000Z',
+        },
+      });
+
+      const result = await deleteFamily('fam-123');
+
+      expect(result.deletedAt).toBeDefined();
+      // 0 people + 1 family = 1 UpdateCommand
+      expect(ddbMock.commandCalls(UpdateCommand).length).toBe(1);
+    });
+
+    it('should throw error if family not found', async () => {
+      ddbMock.on(GetCommand).resolves({});
+
+      await expect(deleteFamily('fam-nonexistent')).rejects.toThrow('Family not found');
+    });
+
+    it('should throw error if family already deleted', async () => {
+      ddbMock.on(GetCommand).resolves({
+        Item: {
+          familyId: 'fam-123',
+          lastName: 'Smith',
+          deletedAt: '2026-03-07T00:00:00.000Z',
+        },
+      });
+
+      await expect(deleteFamily('fam-123')).rejects.toThrow('Family already deleted');
     });
   });
 });

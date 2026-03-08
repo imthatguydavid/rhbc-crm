@@ -509,3 +509,23 @@ export async function getCompletedCheckIns(): Promise<CheckIn[]> {
   const data = await response.json();
   return data.checkIns;
 }
+
+/**
+ * Soft deletes a family and all its members.
+ *
+ * @param familyId - Family ID to delete
+ * @returns Promise that resolves to deleted Family record
+ * @throws {Error} If family not found or already deleted
+ */
+export async function deleteFamily(familyId: string) {
+  const response = await fetch(getApiUrl(`/families/${familyId}`), {
+    ...API_CONFIG,
+    method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    await handleErrorResponse(response, 'Failed to delete family');
+  }
+
+  return await response.json();
+}
