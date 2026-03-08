@@ -56,4 +56,13 @@ export interface Family {
    * @example "2026-01-31T14:30:00.000Z"
    */
   updatedAt: string;
+
+  /**
+   * ISO 8601 timestamp when family record was soft deleted.
+   * When set, family is excluded from all queries.
+   * Undefined for active families.
+   *
+   * @example "2026-03-08T00:00:00.000Z"
+   */
+  deletedAt?: string;
 }

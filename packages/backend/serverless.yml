@@ -150,6 +150,14 @@ functions:
           method: get
           cors: true
 
+  deleteFamily:
+    handler: src/family/handlers/deleteFamily.handler
+    events:
+      - http:
+          path: /families/{id}
+          method: delete
+          cors: true
+
 resources:
   Resources:
     # ===== Check-ins Table =====
