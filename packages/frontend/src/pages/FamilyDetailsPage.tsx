@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Person } from '@rhbc-crm/shared';
-import { ArrowLeft, Pencil, UserPlus } from 'lucide-react';
+import { ArrowLeft, Pencil, UserPlus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EditFamilySheet } from '@/components/families/EditFamilySheet';
@@ -37,15 +37,18 @@ export function FamilyDetailsPage() {
     family,
     parents,
     children,
+    selectedPerson,
     isLoading,
     isDeleteConfirmOpen,
-    selectedPerson,
+    isDeleteFamilyConfirmOpen,
     setSelectedPerson,
     setIsDeleteConfirmOpen,
+    setIsDeleteFamilyConfirmOpen,
     handleUpdateFamily,
     handleUpdatePerson,
     handleConfirmDelete,
     handleAddChild,
+    handleDeleteFamily,
   } = useFamilyDetails(familyId);
 
   const handleEditPerson = (person: Person) => {
@@ -93,103 +96,126 @@ export function FamilyDetailsPage() {
   const badge = getFamilyStatusBadge(family.status);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/families')}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+    <>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/families')}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">{family.lastName} Family</h1>
+              <p className="text-slate-600">
+                <Badge className={`${badge.className} mr-4`}>{badge.label}</Badge>
+                Added {new Date(family.createdAt).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsEditFamilyOpen(true)} className="gap-2">
+              <Pencil className="h-4 w-4" />
+              Edit Family
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteFamilyConfirmOpen(true)}
+              className="gap-2 text-red-600 hover:text-red-600 border-red-200 hover:bg-red-50"
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete Family
+            </Button>
+          </div>
+        </div>
+        {parents.length > 0 && (
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">{family.lastName} Family</h1>
-            <p className="text-slate-600">
-              <Badge className={`${badge.className} mr-4`}>{badge.label}</Badge>
-              Added {new Date(family.createdAt).toLocaleDateString()}
-            </p>
-          </div>
-        </div>
-        <Button variant="outline" onClick={() => setIsEditFamilyOpen(true)} className="gap-2">
-          <Pencil className="h-4 w-4" />
-          Edit Family
-        </Button>
-      </div>
-      {parents.length > 0 && (
-        <div>
-          <h2 className="text-xl font-semibold text-slate-900 mb-3">Parents ({parents.length})</h2>
-          <div className="space-y-3">
-            {parents.map((parent) => (
-              <PersonCard
-                key={parent.personId}
-                person={parent}
-                onEdit={() => handleEditPerson(parent)}
-                onDelete={() => handleDeletePerson(parent)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl font-semibold text-slate-900">Children ({children.length})</h2>
-          <Button variant="outline" onClick={() => setIsAddChildOpen(true)} className="gap-2">
-            <UserPlus className="h-4 w-4" />
-            Add Child
-          </Button>
-        </div>
-        {children.length > 0 ? (
-          <div className="space-y-3">
-            {children.map((child) => (
-              <PersonCard
-                key={child.personId}
-                person={child}
-                onEdit={() => handleEditPerson(child)}
-                onDelete={() => handleDeletePerson(child)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-lg border border-dashed">
-            No children added yet
+            <h2 className="text-xl font-semibold text-slate-900 mb-3">
+              Parents ({parents.length})
+            </h2>
+            <div className="space-y-3">
+              {parents.map((parent) => (
+                <PersonCard
+                  key={parent.personId}
+                  person={parent}
+                  onEdit={() => handleEditPerson(parent)}
+                  onDelete={() => handleDeletePerson(parent)}
+                />
+              ))}
+            </div>
           </div>
         )}
-      </div>
-      <EditFamilySheet
-        family={family}
-        open={isEditFamilyOpen}
-        onClose={() => setIsEditFamilyOpen(false)}
-        onSave={handleUpdateFamily}
-      />
-      <EditPersonSheet
-        person={selectedPerson}
-        open={isEditPersonOpen}
-        onClose={() => {
-          setIsEditPersonOpen(false);
-          setSelectedPerson(null);
-        }}
-        onSave={handleUpdatePerson}
-      />
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xl font-semibold text-slate-900">Children ({children.length})</h2>
+            <Button variant="outline" onClick={() => setIsAddChildOpen(true)} className="gap-2">
+              <UserPlus className="h-4 w-4" />
+              Add Child
+            </Button>
+          </div>
+          {children.length > 0 ? (
+            <div className="space-y-3">
+              {children.map((child) => (
+                <PersonCard
+                  key={child.personId}
+                  person={child}
+                  onEdit={() => handleEditPerson(child)}
+                  onDelete={() => handleDeletePerson(child)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-lg border border-dashed">
+              No children added yet
+            </div>
+          )}
+        </div>
+        <EditFamilySheet
+          family={family}
+          open={isEditFamilyOpen}
+          onClose={() => setIsEditFamilyOpen(false)}
+          onSave={handleUpdateFamily}
+        />
+        <EditPersonSheet
+          person={selectedPerson}
+          open={isEditPersonOpen}
+          onClose={() => {
+            setIsEditPersonOpen(false);
+            setSelectedPerson(null);
+          }}
+          onSave={handleUpdatePerson}
+        />
 
-      <AddChildSheet
-        familyName={family.lastName}
-        open={isAddChildOpen}
-        onClose={() => setIsAddChildOpen(false)}
-        onAdd={handleAddChild}
-      />
+        <AddChildSheet
+          familyName={family.lastName}
+          open={isAddChildOpen}
+          onClose={() => setIsAddChildOpen(false)}
+          onAdd={handleAddChild}
+        />
+        <ConfirmDialog
+          open={isDeleteConfirmOpen}
+          onClose={() => {
+            setIsDeleteConfirmOpen(false);
+            setSelectedPerson(null);
+          }}
+          onConfirm={handleConfirmDelete}
+          title="Delete Person"
+          description={
+            selectedPerson
+              ? `Are you sure you want to delete ${selectedPerson.firstName}? This action cannot be undone.`
+              : ''
+          }
+          confirmText="Delete"
+          cancelText="Cancel"
+        />
+      </div>
       <ConfirmDialog
-        open={isDeleteConfirmOpen}
-        onClose={() => {
-          setIsDeleteConfirmOpen(false);
-          setSelectedPerson(null);
-        }}
-        onConfirm={handleConfirmDelete}
-        title="Delete Person"
-        description={
-          selectedPerson
-            ? `Are you sure you want to delete ${selectedPerson.firstName}? This action cannot be undone.`
-            : ''
-        }
+        open={isDeleteFamilyConfirmOpen}
+        onClose={() => setIsDeleteFamilyConfirmOpen(false)}
+        onConfirm={handleDeleteFamily}
+        title="Delete Family"
+        description={`Are you sure you want to delete the ${family.lastName} family? This will also delete all family members and cannot be undone.`}
         confirmText="Delete"
         cancelText="Cancel"
       />
-    </div>
+    </>
   );
 }

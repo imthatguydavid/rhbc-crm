@@ -11,11 +11,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { FamiliesTable } from '@/components/families/FamiliesTable';
-import { deleteFamily, searchFamilies } from '@/utils/api';
+import { searchFamilies } from '@/utils/api';
 import { NewFamilyButton } from '@/components/families/NewFamilyButton';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { useNavigate } from 'react-router-dom';
 
 export function FamiliesPage() {
   const [families, setFamilies] = useState<Family[]>([]);
@@ -24,7 +23,6 @@ export function FamiliesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'member' | 'guest'>('all');
   const navigate = useNavigate();
-  const [familyToDelete, setFamilyToDelete] = useState<Family | null>(null);
 
   /**
    * Load families on mount and when filters change
@@ -52,30 +50,14 @@ export function FamiliesPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load families');
       console.error('Error loading families:', err);
+      toast.error(err instanceof Error ? err.message : 'Failed to load families');
     } finally {
       setIsLoading(false);
     }
   }
 
-  const handleAddChildFromMenu = () => {
-    console.log('this is sparta');
-  };
-
-  const handleDeleteFamily = (family: Family) => {
-    setFamilyToDelete(family);
-  };
-
-  const handleConfirmDeleteFamily = async () => {
-    if (!familyToDelete) return;
-
-    try {
-      await deleteFamily(familyToDelete.familyId);
-      toast.success(`${familyToDelete.lastName} family deleted`);
-      setFamilyToDelete(null);
-      await loadFamilies();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to delete family');
-    }
+  const handleAddChildFromMenu = (family: Family) => {
+    navigate(`/families/${family.familyId}?action=addChild`);
   };
 
   return (
@@ -151,19 +133,6 @@ export function FamiliesPage() {
           onAddChild={handleAddChildFromMenu}
         />
       </div>
-      <ConfirmDialog
-        open={familyToDelete !== null}
-        onClose={() => setFamilyToDelete(null)}
-        onConfirm={handleConfirmDeleteFamily}
-        title="Delete Family"
-        description={
-          familyToDelete
-            ? `Are you sure you want to delete the ${familyToDelete.lastName} family? This will also delete all family members and cannot be undone.`
-            : ''
-        }
-        confirmText="Delete"
-        cancelText="Cancel"
-      />
     </>
   );
 }

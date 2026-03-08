@@ -7,6 +7,7 @@ import {
   updatePerson,
   addChildToFamily,
   deletePerson,
+  deleteFamily,
 } from '@/utils/api';
 import { toast } from 'sonner';
 
@@ -18,6 +19,7 @@ export function useFamilyDetails(familyId: string | undefined) {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isDeleteFamilyConfirmOpen, setIsDeleteFamilyConfirmOpen] = useState(false);
 
   const loadFamilyDetails = async () => {
     if (!familyId) return;
@@ -107,18 +109,34 @@ export function useFamilyDetails(familyId: string | undefined) {
     }
   };
 
+  const handleDeleteFamily = async () => {
+    if (!family) return;
+
+    try {
+      await deleteFamily(family.familyId);
+      toast.success(`${family.lastName} family deleted`);
+      navigate('/families');
+    } catch (error) {
+      console.error('Error deleting family:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to delete family');
+    }
+  };
+
   return {
     family,
     parents,
     children,
+    selectedPerson,
     isLoading,
     isDeleteConfirmOpen,
-    selectedPerson,
+    isDeleteFamilyConfirmOpen,
     setSelectedPerson,
     setIsDeleteConfirmOpen,
+    setIsDeleteFamilyConfirmOpen,
     handleUpdateFamily,
     handleUpdatePerson,
     handleConfirmDelete,
     handleAddChild,
+    handleDeleteFamily,
   };
 }
