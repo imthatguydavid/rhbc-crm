@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Person } from '@rhbc-crm/shared';
 import { ArrowLeft, Pencil, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,13 @@ export function FamilyDetailsPage() {
   const [isEditFamilyOpen, setIsEditFamilyOpen] = useState(false);
   const [isEditPersonOpen, setIsEditPersonOpen] = useState(false);
   const [isAddChildOpen, setIsAddChildOpen] = useState(false);
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'addChild') {
+      setIsAddChildOpen(true);
+    }
+  }, []);
 
   const {
     family,

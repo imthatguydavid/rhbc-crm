@@ -91,17 +91,10 @@ function AppSidebar() {
 export function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="flex min-h-screen w-full">
-        <AppSidebar />
-
-        <SidebarInset className="flex-1">
-          {/*<header className="flex h-16 items-center gap-4 border-b bg-background px-6">*/}
-          {/*  <div className="flex-1" />*/}
-          {/*  /!* Future: User menu, notifications, etc. *!/*/}
-          {/*</header>*/}
-          <main className="flex-1 p-6">{children}</main>
-        </SidebarInset>
-      </div>
+      <AppSidebar />
+      <SidebarInset className="static">
+        <main className="flex-1 p-6">{children}</main>
+      </SidebarInset>
     </SidebarProvider>
   );
 }

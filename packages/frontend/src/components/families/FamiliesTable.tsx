@@ -1,15 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Family } from '@rhbc-crm/shared';
 import { useNavigate } from 'react-router-dom';
-import { MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   Table,
   TableBody,
@@ -29,12 +21,12 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { getFamilyStatusBadge } from '@/utils/badges';
 import { TablePagination } from '@/components/TablePagination';
+import { UserPlus } from 'lucide-react';
 
 interface FamiliesTableProps {
   families: Family[];
   isLoading: boolean;
   onAddChild: (family: Family) => void;
-  onDelete: (family: Family) => void;
   pageSize?: number;
 }
 
@@ -48,7 +40,6 @@ export function FamiliesTable({
   families,
   isLoading,
   onAddChild,
-  onDelete,
   pageSize = 10,
 }: FamiliesTableProps) {
   const navigate = useNavigate();
@@ -132,7 +123,7 @@ export function FamiliesTable({
                 <TableRow key={family.familyId} className="cursor-pointer hover:bg-slate-50">
                   <TableCell
                     className="font-medium"
-                    onClick={() => navigate(`/families/${family.familyId}`)} // ← Change this
+                    onClick={() => navigate(`/families/${family.familyId}`)}
                   >
                     {family.lastName} Family
                   </TableCell>
@@ -140,29 +131,14 @@ export function FamiliesTable({
                     <Badge className={badge.className}>{badge.label}</Badge>
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Open menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => navigate(`/families/${family.familyId}`)}>
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onAddChild(family)}>
-                          Add Child
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => onDelete(family)}
-                          className="text-red-600 focus:text-red-600"
-                        >
-                          Delete Family
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        onAddChild(family);
+                      }}
+                    >
+                      <UserPlus />
+                    </Button>
                   </TableCell>
                 </TableRow>
               );
