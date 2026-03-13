@@ -1,17 +1,7 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { created, badRequest, serverError } from '../../shared/utils/response';
 import { createFamilyWithParent } from '../services/familyService.js';
-
-/**
- * Request body structure for creating a family
- */
-interface CreateFamilyRequest {
-  lastName: string;
-  status: 'member' | 'guest';
-  parentFirstName: string;
-  parentPhone: string;
-  parentEmail?: string;
-}
+import { CreateFamilyRequest } from '@rhbc-crm/shared';
 
 /**
  * Lambda handler for POST /families

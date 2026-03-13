@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import type { Family } from '@rhbc-crm/shared';
 import {
   Dialog,
   DialogContent,
@@ -28,7 +27,11 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
-// Form validation schema
+interface FamilyFormData {
+  lastName: string;
+  status: 'guest' | 'member';
+}
+
 const formSchema = z.object({
   lastName: z.string().min(2, 'Last name must be at least 2 characters'),
   status: z.enum(['member', 'guest']),
@@ -43,7 +46,7 @@ interface AddFamilyDialogProps {
   open: boolean;
   onClose: () => void;
   onAddFamily: (
-    family: Family,
+    family: FamilyFormData,
     parentData: { firstName: string; phone: string; email?: string }
   ) => Promise<void>;
 }
@@ -64,15 +67,10 @@ export function AddFamilyDialog({ open, onClose, onAddFamily }: AddFamilyDialogP
 
   const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
-    const now = new Date().toISOString();
 
-    const newFamily: Family = {
-      familyId: '',
+    const newFamily: FamilyFormData = {
       lastName: values.lastName,
       status: values.status,
-      createdAt: now,
-      updatedAt: now,
-      pk: 'FAMILY',
     };
 
     const parentData = {
