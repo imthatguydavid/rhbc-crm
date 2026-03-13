@@ -3,7 +3,6 @@ import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AddFamilyDialog } from '@/components/AddFamilyDialog';
 import { createFamily } from '@/utils/api';
-import type { Family } from '@rhbc-crm/shared';
 import { toast } from 'sonner';
 
 interface NewFamilyButtonProps {
@@ -49,7 +48,10 @@ export function NewFamilyButton({
    * Handles adding a new family via API
    */
   const handleAddFamily = async (
-    family: Family,
+    family: {
+      lastName: string;
+      status: 'guest' | 'member';
+    },
     parentData: { firstName: string; phone: string; email?: string }
   ) => {
     try {

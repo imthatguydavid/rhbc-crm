@@ -6,7 +6,7 @@
  */
 
 import { getApiUrl, API_ENDPOINTS, API_CONFIG } from '@/config/api';
-import type { CheckIn } from '@rhbc-crm/shared';
+import type { CheckIn, CreateFamilyRequest } from '@rhbc-crm/shared';
 
 /**
  * Retrieves all families from the database.
@@ -56,12 +56,12 @@ export async function getFamilies() {
  * in both DynamoDB tables (rhbc-families and rhbc-people), and
  * returns the created entities.
  *
- * @param familyData - Family and parent information
- * @param familyData.lastName - Family surname (min 2 characters)
- * @param familyData.status - Family status: "member" or "guest"
- * @param familyData.parentFirstName - Primary parent's first name (required)
- * @param familyData.parentPhone - Primary parent's phone (10 digits, no formatting)
- * @param familyData.parentEmail - Primary parent's email (optional)
+ * @param request - Family and parent information
+ * @param request.lastName - Family surname (min 2 characters)
+ * @param request.status - Family status: "member" or "guest"
+ * @param request.parentFirstName - Primary parent's first name (required)
+ * @param request.parentPhone - Primary parent's phone (10 digits, no formatting)
+ * @param request.parentEmail - Primary parent's email (optional)
  *
  * @returns Promise that resolves to object containing created family and parent
  * @returns Returns { family: Family, parent: Person }
@@ -84,17 +84,11 @@ export async function getFamilies() {
  * console.log(`Created parent: ${result.parent.personId}`);
  * ```
  */
-export async function createFamily(familyData: {
-  lastName: string;
-  status: 'member' | 'guest';
-  parentFirstName: string;
-  parentPhone: string;
-  parentEmail?: string;
-}) {
+export async function createFamily(request: CreateFamilyRequest) {
   const response = await fetch(getApiUrl(API_ENDPOINTS.CREATE_FAMILY), {
     ...API_CONFIG,
     method: 'POST',
-    body: JSON.stringify(familyData),
+    body: JSON.stringify(request),
   });
 
   if (!response.ok) {

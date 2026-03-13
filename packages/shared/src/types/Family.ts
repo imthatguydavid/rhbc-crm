@@ -66,3 +66,16 @@ export interface Family {
    */
   deletedAt?: string;
 }
+
+/**
+ * Payload for creating a new family via POST /families.
+ * Only includes fields the client is responsible for —
+ * server generates familyId, pk, timestamps, etc.
+ */
+export type CreateFamilyRequest = {
+  lastName: string;
+  status: 'member' | 'guest';
+  parentFirstName: string;
+  parentPhone: string;
+  parentEmail?: string;
+};
