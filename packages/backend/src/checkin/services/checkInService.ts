@@ -1,5 +1,12 @@
 import { PutCommand, GetCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import type { CheckIn, Person, Family } from '@rhbc-crm/shared';
+import {
+  CheckIn,
+  Person,
+  Family,
+  CheckInChildRequest,
+  CheckInChildResponse,
+  CheckOutChildRequest,
+} from '@rhbc-crm/shared';
 import { dynamoDb, Tables } from '../../shared/utils/dynamodb';
 import { getPeopleByFamily } from '../../family/services/familyService';
 import { CHECK_IN_STATUS, CHECKOUT_METHOD } from '@rhbc-crm/shared';
@@ -43,11 +50,7 @@ function generatePin(): string {
  * ```
  */
 
-export async function checkInChild(data: {
-  childId: string;
-  familyId: string;
-  room: string;
-}): Promise<{ checkIn: CheckIn; pin: string }> {
+export async function checkInChild(data: CheckInChildRequest): Promise<CheckInChildResponse> {
   // Check for existing active check-in
   const existingCheckIns = await dynamoDb.send(
     new QueryCommand({
@@ -149,9 +152,9 @@ export async function getActiveCheckIns(): Promise<CheckIn[]> {
 /**
  * Checks out a child with PIN verification
  */
-export async function checkOutChild(checkInId: string, providedPin: string): Promise<CheckIn> {
+export async function checkOutChild({ checkInId, pin }: CheckOutChildRequest): Promise<CheckIn> {
   // Validate PIN format (4 digits)
-  if (!/^\d{4}$/.test(providedPin)) {
+  if (!/^\d{4}$/.test(pin)) {
     throw new Error('PIN must be 4 digits');
   }
 
@@ -171,7 +174,7 @@ export async function checkOutChild(checkInId: string, providedPin: string): Pro
     const checkIn = getResult.Item as CheckIn;
 
     // Verify PIN
-    if (checkIn.checkOutPin !== providedPin) {
+    if (checkIn.checkOutPin !== pin) {
       throw new Error('Invalid PIN');
     }
 

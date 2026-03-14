@@ -135,3 +135,12 @@ export type CheckInChildResponse = {
   checkIn: CheckIn;
   pin: string;
 };
+
+export interface CheckOutChildRequest {
+  checkInId: string;
+  pin: string;
+}
+export interface CheckOutChildResponse {
+  checkIn: CheckIn;
+  message: string;
+}

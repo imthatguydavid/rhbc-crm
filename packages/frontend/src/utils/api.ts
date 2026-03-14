@@ -12,9 +12,7 @@ import {
   CheckInChildResponse,
   CreateFamilyRequest,
   CreateFamilyResponse,
-  Family,
   GetFamilyResponse,
-  Person,
 } from '@rhbc-crm/shared';
 
 /**
