@@ -6,7 +6,29 @@
  */
 
 import { getApiUrl, API_ENDPOINTS, API_CONFIG } from '@/config/api';
-import type { CheckIn, CreateFamilyRequest } from '@rhbc-crm/shared';
+import {
+  CheckIn,
+  CheckInChildRequest,
+  CheckInChildResponse,
+  CheckOutChildRequest,
+  CheckOutChildResponse,
+  CreateFamilyRequest,
+  CreateFamilyResponse,
+  GetFamilyResponse,
+  AddChildToFamilyRequest,
+  AddChildToFamilyResponse,
+  UpdatePersonRequest,
+  UpdatePersonResponse,
+  UpdateFamilyRequest,
+  BulkCheckInChildrenRequest,
+  BulkCheckInChildrenResponse,
+  CheckOutByPinRequest,
+  CheckOutByPinResponse,
+  ValidatePinRequest,
+  AdminCheckOutRequest,
+  AdminCheckOutResponse,
+  ValidatePinResponse,
+} from '@rhbc-crm/shared';
 
 /**
  * Retrieves all families from the database.
@@ -84,7 +106,7 @@ export async function getFamilies() {
  * console.log(`Created parent: ${result.parent.personId}`);
  * ```
  */
-export async function createFamily(request: CreateFamilyRequest) {
+export async function createFamily(request: CreateFamilyRequest): Promise<CreateFamilyResponse> {
   const response = await fetch(getApiUrl(API_ENDPOINTS.CREATE_FAMILY), {
     ...API_CONFIG,
     method: 'POST',
@@ -125,7 +147,7 @@ export async function createFamily(request: CreateFamilyRequest) {
  * });
  * ```
  */
-export async function getFamilyById(familyId: string) {
+export async function getFamilyById(familyId: string): Promise<GetFamilyResponse> {
   const response = await fetch(getApiUrl(API_ENDPOINTS.GET_FAMILY(familyId)), {
     ...API_CONFIG,
   });
@@ -169,7 +191,7 @@ export async function getFamilyById(familyId: string) {
  * // Display PIN prominently: result.pin is a 4-digit string like "4289"
  * ```
  */
-export async function checkInChild(data: { childId: string; familyId: string; room: string }) {
+export async function checkInChild(data: CheckInChildRequest): Promise<CheckInChildResponse> {
   const response = await fetch(getApiUrl(API_ENDPOINTS.CHECKIN), {
     ...API_CONFIG,
     method: 'POST',
@@ -230,9 +252,8 @@ export async function getActiveCheckIns() {
  * then marks the check-in as completed and records the checkout time.
  * This is the secure release mechanism for child pickup.
  *
- * @param data - Checkout information
- * @param data.checkInId - Unique check-in identifier to checkout
- * @param data.pin - 4-digit PIN provided by parent (must match check-in PIN)
+ * @param request.checkInId - Unique check-in identifier to checkout
+ * @param request.pin - 4-digit PIN provided by parent (must match check-in PIN)
  *
  * @returns Promise that resolves to checkout confirmation
  * @returns Returns { checkIn: CheckIn, message: string }
@@ -258,11 +279,11 @@ export async function getActiveCheckIns() {
  * }
  * ```
  */
-export async function checkOutChild(data: { checkInId: string; pin: string }) {
+export async function checkOutChild(request: CheckOutChildRequest): Promise<CheckOutChildResponse> {
   const response = await fetch(getApiUrl(API_ENDPOINTS.CHECKOUT), {
     ...API_CONFIG,
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify(request),
   });
 
   if (!response.ok) {
@@ -282,12 +303,8 @@ export async function checkOutChild(data: { checkInId: string; pin: string }) {
  */
 export async function addChildToFamily(
   familyId: string,
-  childData: {
-    firstName: string;
-    phone?: string;
-    email?: string;
-  }
-) {
+  childData: AddChildToFamilyRequest
+): Promise<AddChildToFamilyResponse> {
   const response = await fetch(getApiUrl(`/families/${familyId}/children`), {
     ...API_CONFIG,
     method: 'POST',
@@ -312,12 +329,8 @@ export async function addChildToFamily(
  */
 export async function updatePerson(
   personId: string,
-  updates: {
-    firstName?: string;
-    phone?: string;
-    email?: string;
-  }
-) {
+  updates: UpdatePersonRequest
+): Promise<UpdatePersonResponse> {
   const response = await fetch(getApiUrl(`/people/${personId}`), {
     ...API_CONFIG,
     method: 'PUT',
@@ -329,7 +342,7 @@ export async function updatePerson(
   }
 
   const data = await response.json();
-  return data.child;
+  return data.person;
 }
 
 /**
@@ -340,13 +353,7 @@ export async function updatePerson(
  * @returns Promise that resolves to updated Family record
  * @throws {Error} If family not found or API request fails
  */
-export async function updateFamily(
-  familyId: string,
-  updates: {
-    lastName?: string;
-    status?: 'member' | 'guest';
-  }
-) {
+export async function updateFamily(familyId: string, updates: UpdateFamilyRequest) {
   const response = await fetch(getApiUrl(`/families/${familyId}`), {
     ...API_CONFIG,
     method: 'PUT',
@@ -414,15 +421,13 @@ export async function searchFamilies(filters?: { search?: string; status?: 'memb
  * Bulk check-in multiple children with one PIN.
  * Used for kiosk mode where parents check in multiple kids together.
  */
-export async function bulkCheckInChildren(data: {
-  familyId: string;
-  childIds: string[];
-  room: string;
-}) {
+export async function bulkCheckInChildren(
+  request: BulkCheckInChildrenRequest
+): Promise<BulkCheckInChildrenResponse> {
   const response = await fetch(getApiUrl('/checkin/bulk'), {
     ...API_CONFIG,
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify(request),
   });
 
   if (!response.ok) {
@@ -436,11 +441,11 @@ export async function bulkCheckInChildren(data: {
  * Check out all children with a PIN.
  * Used for kiosk mode where one PIN checks out multiple kids.
  */
-export async function checkOutByPin(pin: string, checkedOutBy: string) {
+export async function checkOutByPin(request: CheckOutByPinRequest): Promise<CheckOutByPinResponse> {
   const response = await fetch(getApiUrl('/checkout/pin'), {
     ...API_CONFIG,
     method: 'POST',
-    body: JSON.stringify({ pin, checkedOutBy }),
+    body: JSON.stringify(request),
   });
 
   if (!response.ok) {
@@ -453,11 +458,13 @@ export async function checkOutByPin(pin: string, checkedOutBy: string) {
 /**
  * Validate PIN and get family info for checkout selection.
  */
-export async function validatePinForCheckout(pin: string) {
+export async function validatePinForCheckout(
+  request: ValidatePinRequest
+): Promise<ValidatePinResponse> {
   const response = await fetch(getApiUrl('/checkout/pin/validate'), {
     ...API_CONFIG,
     method: 'POST',
-    body: JSON.stringify({ pin }),
+    body: JSON.stringify(request),
   });
 
   if (!response.ok) {
@@ -471,11 +478,14 @@ export async function validatePinForCheckout(pin: string) {
  * Admin checkout - check out a child without PIN.
  * Used by staff in the admin portal.
  */
-export async function adminCheckOut(checkInId: string, checkedOutBy: string) {
+export async function adminCheckOut(
+  checkInId: string,
+  request: AdminCheckOutRequest
+): Promise<AdminCheckOutResponse> {
   const response = await fetch(getApiUrl(`/checkin/${checkInId}/checkout`), {
     ...API_CONFIG,
     method: 'POST',
-    body: JSON.stringify({ checkedOutBy }),
+    body: JSON.stringify(request),
   });
 
   if (!response.ok) {

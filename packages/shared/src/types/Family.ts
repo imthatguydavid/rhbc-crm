@@ -1,3 +1,4 @@
+import { Person } from './Person.js';
 /**
  * Represents a family unit in the church database.
  *
@@ -72,10 +73,23 @@ export interface Family {
  * Only includes fields the client is responsible for —
  * server generates familyId, pk, timestamps, etc.
  */
-export type CreateFamilyRequest = {
-  lastName: string;
-  status: 'member' | 'guest';
+export type CreateFamilyRequest = Pick<Family, 'lastName' | 'status'> & {
   parentFirstName: string;
   parentPhone: string;
   parentEmail?: string;
 };
+
+export interface CreateFamilyResponse {
+  family: Family;
+  parent: Person;
+}
+
+export interface GetFamilyResponse {
+  family: Family;
+  people: Person[];
+}
+
+export type UpdateFamilyRequest = Partial<Pick<Family, 'lastName' | 'status'>>;
+export interface UpdateFamilyResponse {
+  family: Family;
+}

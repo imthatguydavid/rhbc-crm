@@ -1,5 +1,11 @@
-import { PutCommand, QueryCommand, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import type { Family, Person } from '@rhbc-crm/shared';
+import { GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import {
+  AddChildToFamilyRequest,
+  Family,
+  Person,
+  UpdateFamilyRequest,
+  UpdatePersonRequest,
+} from '@rhbc-crm/shared';
 import { dynamoDb, Tables } from '../../shared/utils/dynamodb';
 
 /**
@@ -319,11 +325,7 @@ export async function getAllPeople(): Promise<Person[]> {
  */
 export async function addChildToFamily(
   familyId: string,
-  childData: {
-    firstName: string;
-    phone?: string;
-    email?: string;
-  }
+  childData: AddChildToFamilyRequest
 ): Promise<Person> {
   // 1. Verify family exists
   const family = await getFamilyById(familyId);
@@ -336,7 +338,7 @@ export async function addChildToFamily(
   const now = new Date().toISOString();
 
   // 3. Create child record
-  const child: Person = {
+  const request: Person = {
     personId,
     familyId,
     firstName: childData.firstName,
@@ -348,9 +350,7 @@ export async function addChildToFamily(
   };
 
   // 4. Save to database
-  await createPerson(child);
-
-  return child;
+  return await createPerson(request);
 }
 
 /**
@@ -365,11 +365,7 @@ export async function addChildToFamily(
  */
 export async function updatePerson(
   personId: string,
-  updates: {
-    firstName?: string;
-    phone?: string;
-    email?: string;
-  }
+  updates: UpdatePersonRequest
 ): Promise<Person> {
   // 1. Get existing person
   const existingPerson = await getPersonById(personId);
@@ -433,10 +429,7 @@ export async function updatePerson(
  */
 export async function updateFamily(
   familyId: string,
-  updates: {
-    lastName?: string;
-    status?: 'member' | 'guest';
-  }
+  updates: UpdateFamilyRequest
 ): Promise<Family> {
   // 1. Get existing family
   const existingFamily = await getFamilyById(familyId);

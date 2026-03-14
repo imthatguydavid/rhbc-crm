@@ -1,14 +1,7 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { checkOutChild } from '../services/checkInService.js';
 import { success, badRequest, notFound, serverError } from '../../shared/utils/response';
-
-/**
- * Request body for checking out a child
- */
-interface CheckOutChildRequest {
-  checkInId: string;
-  pin: string;
-}
+import { CheckOutChildRequest } from '@rhbc-crm/shared';
 
 /**
  * Lambda handler for POST /checkout
@@ -30,17 +23,17 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
       return badRequest('Request body is required');
     }
 
-    const body: CheckOutChildRequest = JSON.parse(event.body);
+    const request: CheckOutChildRequest = JSON.parse(event.body);
 
     // Validate required fields
-    if (!body.checkInId || !body.pin) {
+    if (!request.checkInId || !request.pin) {
       return badRequest('Missing required fields: checkInId, pin');
     }
 
     // Check out child with PIN verification
-    const checkIn = await checkOutChild(body.checkInId, body.pin);
+    const checkIn = await checkOutChild(request);
 
-    console.log(`Checked out child from check-in ${body.checkInId}`);
+    console.log(`Checked out child from check-in ${request.checkInId}`);
 
     return success({
       checkIn,

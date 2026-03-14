@@ -1,15 +1,7 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { checkInChild } from '../services/checkInService.js';
 import { created, badRequest, serverError } from '../../shared/utils/response';
-
-/**
- * Request body for checking in a child
- */
-interface CheckInChildRequest {
-  childId: string;
-  familyId: string;
-  room: string;
-}
+import { CheckInChildRequest } from '@rhbc-crm/shared';
 
 /**
  * Lambda handler for POST /checkin

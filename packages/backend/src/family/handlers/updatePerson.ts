@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { updatePerson } from '../services/familyService.js';
 import { success, badRequest, notFound, serverError } from '../../shared/utils/response.js';
+import { UpdatePersonRequest } from '@rhbc-crm/shared';
 
 /**
  * Lambda handler for updating a person's information.
@@ -39,7 +40,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Update person
-    const updates: any = {};
+    const updates: UpdatePersonRequest = {};
     if (firstName) updates.firstName = firstName.trim();
     if (phone) updates.phone = phone.trim();
     if (email) updates.email = email.trim();

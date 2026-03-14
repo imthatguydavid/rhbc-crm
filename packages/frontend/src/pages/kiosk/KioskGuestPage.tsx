@@ -84,10 +84,10 @@ export function KioskGuestPage() {
       // Step 2: Add children
       const childIds: string[] = [];
       for (const child of children) {
-        const person = await addChildToFamily(familyId, {
+        const response = await addChildToFamily(familyId, {
           firstName: child.firstName.trim(),
         });
-        childIds.push(person.personId);
+        childIds.push(response.child.personId);
       }
 
       // Step 3: Bulk check-in

@@ -1,5 +1,19 @@
 import { PutCommand, GetCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import type { CheckIn, Person, Family } from '@rhbc-crm/shared';
+import {
+  CheckIn,
+  Person,
+  Family,
+  CheckInChildRequest,
+  CheckInChildResponse,
+  CheckOutChildRequest,
+  BulkCheckInChildrenRequest,
+  BulkCheckInChildrenResponse,
+  CheckOutByPinRequest,
+  CheckOutByPinResponse,
+  ValidatePinRequest,
+  ValidatePinResponse,
+  AdminCheckOutRequest,
+} from '@rhbc-crm/shared';
 import { dynamoDb, Tables } from '../../shared/utils/dynamodb';
 import { getPeopleByFamily } from '../../family/services/familyService';
 import { CHECK_IN_STATUS, CHECKOUT_METHOD } from '@rhbc-crm/shared';
@@ -43,11 +57,7 @@ function generatePin(): string {
  * ```
  */
 
-export async function checkInChild(data: {
-  childId: string;
-  familyId: string;
-  room: string;
-}): Promise<{ checkIn: CheckIn; pin: string }> {
+export async function checkInChild(data: CheckInChildRequest): Promise<CheckInChildResponse> {
   // Check for existing active check-in
   const existingCheckIns = await dynamoDb.send(
     new QueryCommand({
@@ -149,9 +159,9 @@ export async function getActiveCheckIns(): Promise<CheckIn[]> {
 /**
  * Checks out a child with PIN verification
  */
-export async function checkOutChild(checkInId: string, providedPin: string): Promise<CheckIn> {
+export async function checkOutChild({ checkInId, pin }: CheckOutChildRequest): Promise<CheckIn> {
   // Validate PIN format (4 digits)
-  if (!/^\d{4}$/.test(providedPin)) {
+  if (!/^\d{4}$/.test(pin)) {
     throw new Error('PIN must be 4 digits');
   }
 
@@ -171,7 +181,7 @@ export async function checkOutChild(checkInId: string, providedPin: string): Pro
     const checkIn = getResult.Item as CheckIn;
 
     // Verify PIN
-    if (checkIn.checkOutPin !== providedPin) {
+    if (checkIn.checkOutPin !== pin) {
       throw new Error('Invalid PIN');
     }
 
@@ -238,11 +248,9 @@ export async function checkOutChild(checkInId: string, providedPin: string): Pro
  * // Returns: { checkins: [...], pin: '4289' }
  * ```
  */
-export async function bulkCheckInChildren(data: {
-  familyId: string;
-  childIds: string[];
-  room: string;
-}): Promise<{ checkIns: CheckIn[]; pin: string }> {
+export async function bulkCheckInChildren(
+  data: BulkCheckInChildrenRequest
+): Promise<BulkCheckInChildrenResponse> {
   const { familyId, childIds, room } = data;
 
   // Validation
@@ -313,10 +321,7 @@ export async function bulkCheckInChildren(data: {
  * Fetches child names from the People table to include in the response.
  * Used for kiosk mode where one PIN checks out multiple children.
  *
- * @param pin - 4-digit PIN provided by parent
- * @param checkedOutBy - Name of person picking up the children
  *
- * @param checkedOutBy
  * @returns Promise resolving to array of checked-out records with child names and success message
  * @throws {Error} If PIN is incorrect or no active check-ins found
  *
@@ -330,14 +335,11 @@ export async function bulkCheckInChildren(data: {
  * //   ],
  * //   message: '2 children checked out successfully'
  * // }
+ * @param request
  */
-export async function checkOutByPin(
-  pin: string,
-  checkedOutBy: string
-): Promise<{
-  checkIns: Array<CheckIn & { childName?: string }>;
-  message: string;
-}> {
+export async function checkOutByPin(request: CheckOutByPinRequest): Promise<CheckOutByPinResponse> {
+  const { pin, checkedOutBy } = request;
+
   if (!pin || pin.length !== 4) {
     throw new Error('Valid 4-digit PIN is required');
   }
@@ -468,7 +470,6 @@ async function getActiveCheckInByChild(childId: string): Promise<CheckIn | null>
  * parent names and children being picked up. Does NOT perform the actual checkout.
  * Used in kiosk flow to show parent selection before checkout.
  *
- * @param pin - 4-digit PIN to validate
  *
  * @returns Promise resolving to family info and children to be picked up
  * @throws {Error} If PIN is invalid or no active check-ins found
@@ -483,14 +484,12 @@ async function getActiveCheckInByChild(childId: string): Promise<CheckIn | null>
  * //   parents: [{ personId: 'per-789', firstName: 'Sarah' }, ...]
  * // }
  * ```
+ * @param request
  */
-export async function validatePinForCheckout(pin: string): Promise<{
-  familyId: string;
-  lastName: string;
-  children: Array<{ personId: string; firstName: string }>;
-  parents: Array<{ personId: string; firstName: string }>;
-}> {
-  if (!pin || pin.length !== 4) {
+export async function validatePinForCheckout(
+  request: ValidatePinRequest
+): Promise<ValidatePinResponse> {
+  if (!request.pin || request.pin.length !== 4) {
     throw new Error('Valid 4-digit PIN is required');
   }
 
@@ -499,7 +498,9 @@ export async function validatePinForCheckout(pin: string): Promise<{
     const activeCheckIns = await getActiveCheckIns();
 
     // Filter by PIN
-    const matchingCheckIns = activeCheckIns.filter((checkIn) => checkIn.checkOutPin === pin);
+    const matchingCheckIns = activeCheckIns.filter(
+      (checkIn) => checkIn.checkOutPin === request.pin
+    );
 
     if (matchingCheckIns.length === 0) {
       throw new Error('No active check-ins found with that PIN');
@@ -564,7 +565,7 @@ export async function validatePinForCheckout(pin: string): Promise<{
  * Records who performed the checkout for audit trail.
  *
  * @param checkInId - Check-in ID to checkout
- * @param checkedOutBy - Name of person picking up the child
+ * @param request
  * @param adminUserId - Optional: ID of admin who performed checkout (for future Cognito integration)
  *
  * @returns Promise resolving to updated check-in record with child name
@@ -578,9 +579,11 @@ export async function validatePinForCheckout(pin: string): Promise<{
  */
 export async function adminCheckOut(
   checkInId: string,
-  checkedOutBy: string,
+  request: AdminCheckOutRequest,
   adminUserId?: string
 ): Promise<{ checkIn: CheckIn; childName?: string }> {
+  const { checkedOutBy } = request;
+
   if (!checkedOutBy || !checkedOutBy.trim()) {
     throw new Error('Name of person picking up is required');
   }

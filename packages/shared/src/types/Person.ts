@@ -110,3 +110,30 @@ export interface Person {
    */
   deletedAt?: string;
 }
+
+/**
+ * Payload for adding a child to a family via POST /families/{familyId}/children.
+ * familyId comes from the URL path parameter.
+ */
+export type AddChildToFamilyRequest = Pick<Person, 'firstName' | 'phone' | 'email'>;
+
+/**
+ * Response from POST /families/{familyId}/children.
+ */
+export interface AddChildToFamilyResponse {
+  child: Person;
+}
+
+/**
+ * Payload for updating a person via PUT /people/{personId}.
+ * personId comes from the URL path parameter.
+ * All fields optional — only provided fields are updated.
+ */
+export type UpdatePersonRequest = Partial<Pick<Person, 'firstName' | 'phone' | 'email'>>;
+
+/**
+ * Response from PUT /people/{personId}.
+ */
+export interface UpdatePersonResponse {
+  person: Person;
+}

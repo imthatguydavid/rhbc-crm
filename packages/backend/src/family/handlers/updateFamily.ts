@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { updateFamily } from '../services/familyService.js';
 import { success, badRequest, notFound, serverError } from '../../shared/utils/response.js';
+import { UpdateFamilyRequest } from '@rhbc-crm/shared';
 
 /**
  * Lambda handler for updating a family's information.
@@ -43,7 +44,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Update family
-    const updates: any = {};
+    const updates: UpdateFamilyRequest = {};
     if (lastName) updates.lastName = lastName.trim();
     if (status) updates.status = status;
 

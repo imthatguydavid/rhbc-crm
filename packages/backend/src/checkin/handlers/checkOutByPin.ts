@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { checkOutByPin } from '../services/checkInService.js';
 import { success, badRequest, serverError } from '../../shared/utils/response.js';
+import { CheckOutByPinRequest, CheckOutByPinResponse } from '@rhbc-crm/shared';
 
 /**
  * Lambda handler for checking out children by PIN.
@@ -25,7 +26,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Request body is required');
     }
 
-    const { pin, checkedOutBy } = JSON.parse(event.body);
+    const request: CheckOutByPinRequest = JSON.parse(event.body);
+    const { checkedOutBy, pin } = request;
 
     if (!pin) {
       return badRequest('PIN is required');
@@ -36,7 +38,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Check out by PIN
-    const result = await checkOutByPin(pin, checkedOutBy);
+    const result: CheckOutByPinResponse = await checkOutByPin(request);
 
     return success(result);
   } catch (error) {
