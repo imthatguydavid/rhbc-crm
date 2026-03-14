@@ -25,6 +25,9 @@ import {
   CheckOutByPinRequest,
   CheckOutByPinResponse,
   ValidatePinRequest,
+  AdminCheckOutRequest,
+  AdminCheckOutResponse,
+  ValidatePinResponse,
 } from '@rhbc-crm/shared';
 
 /**
@@ -457,7 +460,7 @@ export async function checkOutByPin(request: CheckOutByPinRequest): Promise<Chec
  */
 export async function validatePinForCheckout(
   request: ValidatePinRequest
-): Promise<CheckOutByPinResponse> {
+): Promise<ValidatePinResponse> {
   const response = await fetch(getApiUrl('/checkout/pin/validate'), {
     ...API_CONFIG,
     method: 'POST',
@@ -475,11 +478,14 @@ export async function validatePinForCheckout(
  * Admin checkout - check out a child without PIN.
  * Used by staff in the admin portal.
  */
-export async function adminCheckOut(checkInId: string, checkedOutBy: string) {
+export async function adminCheckOut(
+  checkInId: string,
+  request: AdminCheckOutRequest
+): Promise<AdminCheckOutResponse> {
   const response = await fetch(getApiUrl(`/checkin/${checkInId}/checkout`), {
     ...API_CONFIG,
     method: 'POST',
-    body: JSON.stringify({ checkedOutBy }),
+    body: JSON.stringify(request),
   });
 
   if (!response.ok) {

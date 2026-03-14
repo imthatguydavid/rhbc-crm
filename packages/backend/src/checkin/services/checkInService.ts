@@ -12,6 +12,7 @@ import {
   CheckOutByPinResponse,
   ValidatePinRequest,
   ValidatePinResponse,
+  AdminCheckOutRequest,
 } from '@rhbc-crm/shared';
 import { dynamoDb, Tables } from '../../shared/utils/dynamodb';
 import { getPeopleByFamily } from '../../family/services/familyService';
@@ -564,7 +565,7 @@ export async function validatePinForCheckout(
  * Records who performed the checkout for audit trail.
  *
  * @param checkInId - Check-in ID to checkout
- * @param checkedOutBy - Name of person picking up the child
+ * @param request
  * @param adminUserId - Optional: ID of admin who performed checkout (for future Cognito integration)
  *
  * @returns Promise resolving to updated check-in record with child name
@@ -578,9 +579,11 @@ export async function validatePinForCheckout(
  */
 export async function adminCheckOut(
   checkInId: string,
-  checkedOutBy: string,
+  request: AdminCheckOutRequest,
   adminUserId?: string
 ): Promise<{ checkIn: CheckIn; childName?: string }> {
+  const { checkedOutBy } = request;
+
   if (!checkedOutBy || !checkedOutBy.trim()) {
     throw new Error('Name of person picking up is required');
   }

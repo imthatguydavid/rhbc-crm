@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { adminCheckOut } from '../services/checkInService.js';
 import { success, badRequest, serverError } from '../../shared/utils/response.js';
+import { AdminCheckOutRequest, AdminCheckOutResponse } from '@rhbc-crm/shared';
 
 /**
  * Lambda handler for admin checkout (no PIN required).
@@ -30,14 +31,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Request body is required');
     }
 
-    const { checkedOutBy } = JSON.parse(event.body);
+    const request: AdminCheckOutRequest = JSON.parse(event.body);
+    const { checkedOutBy } = request;
 
     if (!checkedOutBy) {
       return badRequest('Name of person picking up is required');
     }
 
     // TODO: Get adminUserId from Cognito token when auth is implemented
-    const result = await adminCheckOut(checkInId, checkedOutBy);
+    const result: AdminCheckOutResponse = await adminCheckOut(checkInId, request);
 
     return success(result);
   } catch (error) {

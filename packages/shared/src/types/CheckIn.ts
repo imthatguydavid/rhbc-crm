@@ -193,3 +193,19 @@ export interface ValidatePinResponse {
   children: Array<{ personId: string; firstName: string }>;
   parents: Array<{ personId: string; firstName: string }>;
 }
+
+/**
+ * Payload for admin checkout via POST /checkin/{checkInId}/checkout.
+ * checkInId comes from the URL path parameter.
+ */
+export interface AdminCheckOutRequest {
+  checkedOutBy: string;
+}
+
+/**
+ * Response from POST /checkin/{checkInId}/checkout.
+ */
+export interface AdminCheckOutResponse {
+  checkIn: CheckIn;
+  childName?: string;
+}
