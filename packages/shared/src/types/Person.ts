@@ -123,3 +123,17 @@ export type AddChildToFamilyRequest = Pick<Person, 'firstName' | 'phone' | 'emai
 export interface AddChildToFamilyResponse {
   child: Person;
 }
+
+/**
+ * Payload for updating a person via PUT /people/{personId}.
+ * personId comes from the URL path parameter.
+ * All fields optional — only provided fields are updated.
+ */
+export type UpdatePersonRequest = Partial<Pick<Person, 'firstName' | 'phone' | 'email'>>;
+
+/**
+ * Response from PUT /people/{personId}.
+ */
+export interface UpdatePersonResponse {
+  person: Person;
+}

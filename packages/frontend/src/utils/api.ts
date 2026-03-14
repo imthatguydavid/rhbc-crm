@@ -17,6 +17,8 @@ import {
   GetFamilyResponse,
   AddChildToFamilyRequest,
   AddChildToFamilyResponse,
+  UpdatePersonRequest,
+  UpdatePersonResponse,
 } from '@rhbc-crm/shared';
 
 /**
@@ -318,12 +320,8 @@ export async function addChildToFamily(
  */
 export async function updatePerson(
   personId: string,
-  updates: {
-    firstName?: string;
-    phone?: string;
-    email?: string;
-  }
-) {
+  updates: UpdatePersonRequest
+): Promise<UpdatePersonResponse> {
   const response = await fetch(getApiUrl(`/people/${personId}`), {
     ...API_CONFIG,
     method: 'PUT',
@@ -335,7 +333,7 @@ export async function updatePerson(
   }
 
   const data = await response.json();
-  return data.child;
+  return data.person;
 }
 
 /**
