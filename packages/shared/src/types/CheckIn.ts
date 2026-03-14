@@ -161,3 +161,19 @@ export interface BulkCheckInChildrenResponse {
   checkIns: CheckIn[];
   pin: string;
 }
+
+/**
+ * Payload for checking out children by PIN via POST /checkout/pin.
+ */
+export interface CheckOutByPinRequest {
+  pin: string;
+  checkedOutBy: string;
+}
+
+/**
+ * Response from POST /checkout/pin.
+ */
+export interface CheckOutByPinResponse {
+  checkIns: Array<CheckIn & { childName?: string }>;
+  message: string;
+}

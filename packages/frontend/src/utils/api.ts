@@ -22,6 +22,8 @@ import {
   UpdateFamilyRequest,
   BulkCheckInChildrenRequest,
   BulkCheckInChildrenResponse,
+  CheckOutByPinRequest,
+  CheckOutByPinResponse,
 } from '@rhbc-crm/shared';
 
 /**
@@ -416,12 +418,12 @@ export async function searchFamilies(filters?: { search?: string; status?: 'memb
  * Used for kiosk mode where parents check in multiple kids together.
  */
 export async function bulkCheckInChildren(
-  data: BulkCheckInChildrenRequest
+  request: BulkCheckInChildrenRequest
 ): Promise<BulkCheckInChildrenResponse> {
   const response = await fetch(getApiUrl('/checkin/bulk'), {
     ...API_CONFIG,
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify(request),
   });
 
   if (!response.ok) {
@@ -435,11 +437,11 @@ export async function bulkCheckInChildren(
  * Check out all children with a PIN.
  * Used for kiosk mode where one PIN checks out multiple kids.
  */
-export async function checkOutByPin(pin: string, checkedOutBy: string) {
+export async function checkOutByPin(request: CheckOutByPinRequest): Promise<CheckOutByPinResponse> {
   const response = await fetch(getApiUrl('/checkout/pin'), {
     ...API_CONFIG,
     method: 'POST',
-    body: JSON.stringify({ pin, checkedOutBy }),
+    body: JSON.stringify(request),
   });
 
   if (!response.ok) {

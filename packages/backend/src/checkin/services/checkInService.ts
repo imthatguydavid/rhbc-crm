@@ -8,6 +8,8 @@ import {
   CheckOutChildRequest,
   BulkCheckInChildrenRequest,
   BulkCheckInChildrenResponse,
+  CheckOutByPinRequest,
+  CheckOutByPinResponse,
 } from '@rhbc-crm/shared';
 import { dynamoDb, Tables } from '../../shared/utils/dynamodb';
 import { getPeopleByFamily } from '../../family/services/familyService';
@@ -316,10 +318,7 @@ export async function bulkCheckInChildren(
  * Fetches child names from the People table to include in the response.
  * Used for kiosk mode where one PIN checks out multiple children.
  *
- * @param pin - 4-digit PIN provided by parent
- * @param checkedOutBy - Name of person picking up the children
  *
- * @param checkedOutBy
  * @returns Promise resolving to array of checked-out records with child names and success message
  * @throws {Error} If PIN is incorrect or no active check-ins found
  *
@@ -333,14 +332,11 @@ export async function bulkCheckInChildren(
  * //   ],
  * //   message: '2 children checked out successfully'
  * // }
+ * @param request
  */
-export async function checkOutByPin(
-  pin: string,
-  checkedOutBy: string
-): Promise<{
-  checkIns: Array<CheckIn & { childName?: string }>;
-  message: string;
-}> {
+export async function checkOutByPin(request: CheckOutByPinRequest): Promise<CheckOutByPinResponse> {
+  const { pin, checkedOutBy } = request;
+
   if (!pin || pin.length !== 4) {
     throw new Error('Valid 4-digit PIN is required');
   }
