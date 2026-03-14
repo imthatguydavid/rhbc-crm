@@ -6,7 +6,16 @@
  */
 
 import { getApiUrl, API_ENDPOINTS, API_CONFIG } from '@/config/api';
-import type { CheckIn, CreateFamilyRequest } from '@rhbc-crm/shared';
+import {
+  CheckIn,
+  CheckInChildRequest,
+  CheckInChildResponse,
+  CreateFamilyRequest,
+  CreateFamilyResponse,
+  Family,
+  GetFamilyResponse,
+  Person,
+} from '@rhbc-crm/shared';
 
 /**
  * Retrieves all families from the database.
@@ -84,7 +93,7 @@ export async function getFamilies() {
  * console.log(`Created parent: ${result.parent.personId}`);
  * ```
  */
-export async function createFamily(request: CreateFamilyRequest) {
+export async function createFamily(request: CreateFamilyRequest): Promise<CreateFamilyResponse> {
   const response = await fetch(getApiUrl(API_ENDPOINTS.CREATE_FAMILY), {
     ...API_CONFIG,
     method: 'POST',
@@ -125,7 +134,7 @@ export async function createFamily(request: CreateFamilyRequest) {
  * });
  * ```
  */
-export async function getFamilyById(familyId: string) {
+export async function getFamilyById(familyId: string): Promise<GetFamilyResponse> {
   const response = await fetch(getApiUrl(API_ENDPOINTS.GET_FAMILY(familyId)), {
     ...API_CONFIG,
   });
@@ -169,7 +178,7 @@ export async function getFamilyById(familyId: string) {
  * // Display PIN prominently: result.pin is a 4-digit string like "4289"
  * ```
  */
-export async function checkInChild(data: { childId: string; familyId: string; room: string }) {
+export async function checkInChild(data: CheckInChildRequest): Promise<CheckInChildResponse> {
   const response = await fetch(getApiUrl(API_ENDPOINTS.CHECKIN), {
     ...API_CONFIG,
     method: 'POST',

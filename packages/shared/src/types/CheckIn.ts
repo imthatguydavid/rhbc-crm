@@ -10,7 +10,6 @@ export interface CheckIn {
    * Unique identifier for this check-in event.
    * Generated as a timestamp-based ID when child is checked in.
    *
-   * @example "chk-1738425600000-m9x4p7w"
    */
   checkInId: string;
 
@@ -18,7 +17,6 @@ export interface CheckIn {
    * Reference to the child being checked in.
    * Links to Person.personId where Person.role === 'child'.
    *
-   * @example "per-1738425600000-a5n8k3r"
    */
   childId: string;
 
@@ -27,7 +25,6 @@ export interface CheckIn {
    * Links to Family.familyId for quick family lookups.
    * Denormalized for performance - avoids joining through Person.
    *
-   * @example "fam-1738425600000-x7k9m2p"
    */
   familyId: string;
 
@@ -35,7 +32,6 @@ export interface CheckIn {
    * ISO 8601 timestamp when child was checked in.
    * Recorded at the moment parent drops off child.
    *
-   * @example "2026-02-02T09:15:00.000Z"
    */
   checkInTime: string;
 
@@ -44,8 +40,6 @@ export interface CheckIn {
    * Null while child is still in childcare.
    * Set when parent successfully retrieves child.
    *
-   * @example "2026-02-02T11:45:00.000Z"
-   * @example null  // Child still checked in
    */
   checkOutTime: string | null;
 
@@ -56,8 +50,6 @@ export interface CheckIn {
    *
    * Security feature prevents unauthorized pickups.
    *
-   * @example "1234"
-   * @example "9876"
    */
   checkOutPin: string;
 
@@ -67,9 +59,6 @@ export interface CheckIn {
    * - "manual_override": Emergency checkout without PIN (requires notes)
    * - null: Child not yet checked out
    *
-   * @example "pin"
-   * @example "manual_override"
-   * @example null  // Still checked in
    */
   checkOutMethod: 'pin' | 'manual_override' | null;
 
@@ -80,9 +69,6 @@ export interface CheckIn {
    *
    * Used for audit trail and accountability.
    *
-   * @example "Parent forgot PIN, verified ID"
-   * @example "Medical emergency, released to ambulance"
-   * @example null  // Normal PIN checkout or still checked in
    */
   manualOverrideNotes: string | null;
 
@@ -105,10 +91,6 @@ export interface CheckIn {
    * Childcare room or class assignment.
    * Indicates where child was placed for age-appropriate care.
    *
-   * @example "Nursery A"
-   * @example "Toddler Room"
-   * @example "Preschool"
-   * @example "Elementary - Room 3"
    */
   room: string;
 
@@ -116,7 +98,6 @@ export interface CheckIn {
    * ISO 8601 timestamp when check-in record was created.
    * Usually matches checkInTime but represents database record creation.
    *
-   * @example "2026-02-02T09:15:00.000Z"
    */
   createdAt: string;
 
@@ -124,7 +105,6 @@ export interface CheckIn {
    * ISO 8601 timestamp when check-in record was last updated.
    * Updated when child is checked out or record is modified.
    *
-   * @example "2026-02-02T11:45:00.000Z"
    */
   updatedAt: string;
 
@@ -136,9 +116,6 @@ export interface CheckIn {
    * - Admin checkout: Logged-in user's name (future feature)
    * - Null if child not yet checked out
    *
-   * @example "Sarah Johnson"
-   * @example "John Kim"
-   * @example null  // Still checked in
    */
   checkedOutBy: string | null;
 
@@ -149,8 +126,12 @@ export interface CheckIn {
    *
    * Future feature when Cognito authentication is added.
    *
-   * @example "user-abc123"
-   * @example null
    */
   checkedOutByUserId: string | null;
 }
+
+export type CheckInChildRequest = Pick<CheckIn, 'childId' | 'familyId' | 'room'>;
+export type CheckInChildResponse = {
+  checkIn: CheckIn;
+  pin: string;
+};
