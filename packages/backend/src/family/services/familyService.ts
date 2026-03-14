@@ -1,5 +1,11 @@
 import { GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
-import { AddChildToFamilyRequest, Family, Person, UpdatePersonRequest } from '@rhbc-crm/shared';
+import {
+  AddChildToFamilyRequest,
+  Family,
+  Person,
+  UpdateFamilyRequest,
+  UpdatePersonRequest,
+} from '@rhbc-crm/shared';
 import { dynamoDb, Tables } from '../../shared/utils/dynamodb';
 
 /**
@@ -423,10 +429,7 @@ export async function updatePerson(
  */
 export async function updateFamily(
   familyId: string,
-  updates: {
-    lastName?: string;
-    status?: 'member' | 'guest';
-  }
+  updates: UpdateFamilyRequest
 ): Promise<Family> {
   // 1. Get existing family
   const existingFamily = await getFamilyById(familyId);

@@ -88,3 +88,8 @@ export interface GetFamilyResponse {
   family: Family;
   people: Person[];
 }
+
+export type UpdateFamilyRequest = Partial<Pick<Family, 'lastName' | 'status'>>;
+export interface UpdateFamilyResponse {
+  family: Family;
+}

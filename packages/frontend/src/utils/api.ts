@@ -19,6 +19,7 @@ import {
   AddChildToFamilyResponse,
   UpdatePersonRequest,
   UpdatePersonResponse,
+  UpdateFamilyRequest,
 } from '@rhbc-crm/shared';
 
 /**
@@ -344,13 +345,7 @@ export async function updatePerson(
  * @returns Promise that resolves to updated Family record
  * @throws {Error} If family not found or API request fails
  */
-export async function updateFamily(
-  familyId: string,
-  updates: {
-    lastName?: string;
-    status?: 'member' | 'guest';
-  }
-) {
+export async function updateFamily(familyId: string, updates: UpdateFamilyRequest) {
   const response = await fetch(getApiUrl(`/families/${familyId}`), {
     ...API_CONFIG,
     method: 'PUT',
