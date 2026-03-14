@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { bulkCheckInChildren } from '../services/checkInService.js';
 import { success, badRequest, serverError } from '../../shared/utils/response.js';
+import { BulkCheckInChildrenRequest, BulkCheckInChildrenResponse } from '@rhbc-crm/shared';
 
 /**
  * Lambda handler for bulk checking in multiple children with one PIN.
@@ -26,7 +27,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Request body is required');
     }
 
-    const { familyId, childIds, room } = JSON.parse(event.body);
+    const request: BulkCheckInChildrenRequest = JSON.parse(event.body);
+    const { familyId, childIds, room } = request;
 
     // Validation
     if (!familyId) {
@@ -42,7 +44,11 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Bulk check-in
-    const result = await bulkCheckInChildren({ familyId, childIds, room });
+    const result: BulkCheckInChildrenResponse = await bulkCheckInChildren({
+      familyId,
+      childIds,
+      room,
+    });
 
     return success(result);
   } catch (error) {

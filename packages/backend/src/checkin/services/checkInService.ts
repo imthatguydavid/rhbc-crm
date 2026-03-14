@@ -6,6 +6,8 @@ import {
   CheckInChildRequest,
   CheckInChildResponse,
   CheckOutChildRequest,
+  BulkCheckInChildrenRequest,
+  BulkCheckInChildrenResponse,
 } from '@rhbc-crm/shared';
 import { dynamoDb, Tables } from '../../shared/utils/dynamodb';
 import { getPeopleByFamily } from '../../family/services/familyService';
@@ -241,11 +243,9 @@ export async function checkOutChild({ checkInId, pin }: CheckOutChildRequest): P
  * // Returns: { checkins: [...], pin: '4289' }
  * ```
  */
-export async function bulkCheckInChildren(data: {
-  familyId: string;
-  childIds: string[];
-  room: string;
-}): Promise<{ checkIns: CheckIn[]; pin: string }> {
+export async function bulkCheckInChildren(
+  data: BulkCheckInChildrenRequest
+): Promise<BulkCheckInChildrenResponse> {
   const { familyId, childIds, room } = data;
 
   // Validation

@@ -144,3 +144,20 @@ export interface CheckOutChildResponse {
   checkIn: CheckIn;
   message: string;
 }
+
+/**
+ * Payload for bulk checking in multiple children via POST /checkin/bulk.
+ */
+export interface BulkCheckInChildrenRequest {
+  familyId: string;
+  childIds: string[];
+  room: string;
+}
+
+/**
+ * Response from POST /checkin/bulk.
+ */
+export interface BulkCheckInChildrenResponse {
+  checkIns: CheckIn[];
+  pin: string;
+}
