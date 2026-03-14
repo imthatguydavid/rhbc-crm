@@ -10,9 +10,13 @@ import {
   CheckIn,
   CheckInChildRequest,
   CheckInChildResponse,
+  CheckOutChildRequest,
+  CheckOutChildResponse,
   CreateFamilyRequest,
   CreateFamilyResponse,
   GetFamilyResponse,
+  AddChildToFamilyRequest,
+  AddChildToFamilyResponse,
 } from '@rhbc-crm/shared';
 
 /**
@@ -237,9 +241,8 @@ export async function getActiveCheckIns() {
  * then marks the check-in as completed and records the checkout time.
  * This is the secure release mechanism for child pickup.
  *
- * @param data - Checkout information
- * @param data.checkInId - Unique check-in identifier to checkout
- * @param data.pin - 4-digit PIN provided by parent (must match check-in PIN)
+ * @param request.checkInId - Unique check-in identifier to checkout
+ * @param request.pin - 4-digit PIN provided by parent (must match check-in PIN)
  *
  * @returns Promise that resolves to checkout confirmation
  * @returns Returns { checkIn: CheckIn, message: string }
@@ -265,11 +268,11 @@ export async function getActiveCheckIns() {
  * }
  * ```
  */
-export async function checkOutChild(data: { checkInId: string; pin: string }) {
+export async function checkOutChild(request: CheckOutChildRequest): Promise<CheckOutChildResponse> {
   const response = await fetch(getApiUrl(API_ENDPOINTS.CHECKOUT), {
     ...API_CONFIG,
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify(request),
   });
 
   if (!response.ok) {
@@ -289,12 +292,8 @@ export async function checkOutChild(data: { checkInId: string; pin: string }) {
  */
 export async function addChildToFamily(
   familyId: string,
-  childData: {
-    firstName: string;
-    phone?: string;
-    email?: string;
-  }
-) {
+  childData: AddChildToFamilyRequest
+): Promise<AddChildToFamilyResponse> {
   const response = await fetch(getApiUrl(`/families/${familyId}/children`), {
     ...API_CONFIG,
     method: 'POST',

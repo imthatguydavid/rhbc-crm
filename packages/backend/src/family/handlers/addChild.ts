@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { addChildToFamily } from '../services/familyService.js';
 import { created, badRequest, notFound, serverError } from '../../shared/utils/response.js';
+import { AddChildToFamilyRequest, Person } from '@rhbc-crm/shared';
 
 /**
  * Lambda handler for adding a child to a family.
@@ -25,8 +26,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Parse request body
-    const body = JSON.parse(event.body || '{}');
-    const { firstName, phone, email } = body;
+    const request: AddChildToFamilyRequest = JSON.parse(event.body || '{}');
+    const { firstName, phone, email } = request;
 
     // Validate required fields
     if (!firstName || typeof firstName !== 'string' || firstName.trim().length < 2) {
@@ -34,7 +35,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Call service to handle business logic
-    const child = await addChildToFamily(familyId, {
+    const child: Person = await addChildToFamily(familyId, {
       firstName: firstName.trim(),
       phone: phone?.trim(),
       email: email?.trim(),
