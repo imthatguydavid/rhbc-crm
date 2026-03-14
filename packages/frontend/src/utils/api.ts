@@ -24,6 +24,7 @@ import {
   BulkCheckInChildrenResponse,
   CheckOutByPinRequest,
   CheckOutByPinResponse,
+  ValidatePinRequest,
 } from '@rhbc-crm/shared';
 
 /**
@@ -454,11 +455,13 @@ export async function checkOutByPin(request: CheckOutByPinRequest): Promise<Chec
 /**
  * Validate PIN and get family info for checkout selection.
  */
-export async function validatePinForCheckout(pin: string) {
+export async function validatePinForCheckout(
+  request: ValidatePinRequest
+): Promise<CheckOutByPinResponse> {
   const response = await fetch(getApiUrl('/checkout/pin/validate'), {
     ...API_CONFIG,
     method: 'POST',
-    body: JSON.stringify({ pin }),
+    body: JSON.stringify(request),
   });
 
   if (!response.ok) {

@@ -177,3 +177,19 @@ export interface CheckOutByPinResponse {
   checkIns: Array<CheckIn & { childName?: string }>;
   message: string;
 }
+/**
+ * Payload for validating a PIN before checkout via POST /checkout/pin/validate.
+ */
+export interface ValidatePinRequest {
+  pin: string;
+}
+
+/**
+ * Response from POST /checkout/pin/validate.
+ */
+export interface ValidatePinResponse {
+  familyId: string;
+  lastName: string;
+  children: Array<{ personId: string; firstName: string }>;
+  parents: Array<{ personId: string; firstName: string }>;
+}

@@ -10,6 +10,8 @@ import {
   BulkCheckInChildrenResponse,
   CheckOutByPinRequest,
   CheckOutByPinResponse,
+  ValidatePinRequest,
+  ValidatePinResponse,
 } from '@rhbc-crm/shared';
 import { dynamoDb, Tables } from '../../shared/utils/dynamodb';
 import { getPeopleByFamily } from '../../family/services/familyService';
@@ -467,7 +469,6 @@ async function getActiveCheckInByChild(childId: string): Promise<CheckIn | null>
  * parent names and children being picked up. Does NOT perform the actual checkout.
  * Used in kiosk flow to show parent selection before checkout.
  *
- * @param pin - 4-digit PIN to validate
  *
  * @returns Promise resolving to family info and children to be picked up
  * @throws {Error} If PIN is invalid or no active check-ins found
@@ -482,14 +483,12 @@ async function getActiveCheckInByChild(childId: string): Promise<CheckIn | null>
  * //   parents: [{ personId: 'per-789', firstName: 'Sarah' }, ...]
  * // }
  * ```
+ * @param request
  */
-export async function validatePinForCheckout(pin: string): Promise<{
-  familyId: string;
-  lastName: string;
-  children: Array<{ personId: string; firstName: string }>;
-  parents: Array<{ personId: string; firstName: string }>;
-}> {
-  if (!pin || pin.length !== 4) {
+export async function validatePinForCheckout(
+  request: ValidatePinRequest
+): Promise<ValidatePinResponse> {
+  if (!request.pin || request.pin.length !== 4) {
     throw new Error('Valid 4-digit PIN is required');
   }
 
@@ -498,7 +497,9 @@ export async function validatePinForCheckout(pin: string): Promise<{
     const activeCheckIns = await getActiveCheckIns();
 
     // Filter by PIN
-    const matchingCheckIns = activeCheckIns.filter((checkIn) => checkIn.checkOutPin === pin);
+    const matchingCheckIns = activeCheckIns.filter(
+      (checkIn) => checkIn.checkOutPin === request.pin
+    );
 
     if (matchingCheckIns.length === 0) {
       throw new Error('No active check-ins found with that PIN');

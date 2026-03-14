@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { validatePinForCheckout } from '../services/checkInService.js';
 import { success, badRequest, serverError } from '../../shared/utils/response.js';
+import { ValidatePinRequest, ValidatePinResponse } from '@rhbc-crm/shared';
 
 /**
  * Lambda handler for validating a PIN before checkout.
@@ -24,14 +25,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       return badRequest('Request body is required');
     }
 
-    const { pin } = JSON.parse(event.body);
+    const request: ValidatePinRequest = JSON.parse(event.body);
 
-    if (!pin) {
+    if (!request.pin) {
       return badRequest('PIN is required');
     }
 
     // Validate PIN and get family info
-    const result = await validatePinForCheckout(pin);
+    const result: ValidatePinResponse = await validatePinForCheckout(request);
 
     return success(result);
   } catch (error) {
