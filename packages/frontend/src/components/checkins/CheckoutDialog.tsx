@@ -57,7 +57,7 @@ export function CheckoutDialog({ checkIn, open, onClose, onSuccess }: CheckoutDi
     try {
       setIsLoading(true);
 
-      await adminCheckOut(checkIn!.checkInId, name.trim());
+      await adminCheckOut(checkIn!.checkInId, { checkedOutBy: name.trim() });
       toast.success(`${checkIn?.childName} checked out successfully`);
       onSuccess();
       handleOpenChange(false);

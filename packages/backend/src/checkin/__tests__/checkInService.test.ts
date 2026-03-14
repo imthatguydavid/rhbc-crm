@@ -173,7 +173,7 @@ describe('checkInService', () => {
       ddbMock.on(UpdateCommand).resolves({});
 
       // Act: Checkout with correct PIN
-      const result = await checkOutChild('chk-test-123', '1234');
+      const result = await checkOutChild({ checkInId: 'chk-test-123', pin: '1234' });
 
       // Assert: Check-out succeeded
       expect(result.status).toBe(CHECK_IN_STATUS.COMPLETED);
@@ -195,7 +195,7 @@ describe('checkInService', () => {
 
       // Act & Assert: Wrong PIN should throw error
       await expect(
-        checkOutChild('chk-test-123', '9999') // ← Wrong PIN!
+        checkOutChild({ checkInId: 'chk-test-123', pin: '9999' }) // ← Wrong PIN!
       ).rejects.toThrow('Invalid PIN');
 
       // Verify UpdateCommand was NOT called (no checkout happened)
@@ -223,7 +223,7 @@ describe('checkInService', () => {
 
       // Act & Assert: Should reject even with correct PIN
       await expect(
-        checkOutChild('chk-test-123', '1234') // Correct PIN doesn't matter!
+        checkOutChild({ checkInId: 'chk-test-123', pin: '1234' }) // Correct PIN doesn't matter!
       ).rejects.toThrow('Child already checked out');
 
       // Verify UpdateCommand was NOT called (no second checkout)
@@ -237,7 +237,9 @@ describe('checkInService', () => {
       });
 
       // Act & Assert: Should throw error
-      await expect(checkOutChild('chk-nonexistent', '1234')).rejects.toThrow('Check-in not found');
+      await expect(checkOutChild({ checkInId: 'chk-nonexistent', pin: '1234' })).rejects.toThrow(
+        'Check-in not found'
+      );
     });
   });
 
@@ -371,7 +373,7 @@ describe('checkInService', () => {
       ddbMock.on(QueryCommand).resolves({ Items: activeCheckIns });
       ddbMock.on(UpdateCommand).resolves({});
 
-      const result = await checkOutByPin('4289', 'Peter Parker');
+      const result = await checkOutByPin({ pin: '4289', checkedOutBy: 'Peter Parker' });
 
       expect(result.checkIns).toHaveLength(2);
       expect(result.message).toContain('2 children');
@@ -382,28 +384,32 @@ describe('checkInService', () => {
     it('should throw error if PIN not found', async () => {
       ddbMock.on(QueryCommand).resolves({ Items: [] });
 
-      await expect(checkOutByPin('9999', 'Eddie Brock')).rejects.toThrow(
+      await expect(checkOutByPin({ pin: '9999', checkedOutBy: 'Eddie Brock' })).rejects.toThrow(
         'No active check-ins found'
       );
     });
 
     it('should throw error if PIN is invalid', async () => {
-      await expect(checkOutByPin('123', 'Saja Boys')).rejects.toThrow('4-digit PIN');
+      await expect(checkOutByPin({ pin: '123', checkedOutBy: 'Saja Boys' })).rejects.toThrow(
+        '4-digit PIN'
+      );
     });
   });
   describe('validatePinForCheckout', () => {
     it('should throw error for invalid PIN format (too short)', async () => {
-      await expect(validatePinForCheckout('123')).rejects.toThrow('4-digit PIN');
+      await expect(validatePinForCheckout({ pin: '123' })).rejects.toThrow('4-digit PIN');
     });
 
     it('should throw error for empty PIN', async () => {
-      await expect(validatePinForCheckout('')).rejects.toThrow('4-digit PIN');
+      await expect(validatePinForCheckout({ pin: '' })).rejects.toThrow('4-digit PIN');
     });
 
     it('should throw error if no active check-ins found with PIN', async () => {
       ddbMock.on(QueryCommand).resolves({ Items: [] });
 
-      await expect(validatePinForCheckout('9999')).rejects.toThrow('No active check-ins found');
+      await expect(validatePinForCheckout({ pin: '9999' })).rejects.toThrow(
+        'No active check-ins found'
+      );
     });
 
     it('should throw error if family not found', async () => {
@@ -420,7 +426,7 @@ describe('checkInService', () => {
       ddbMock.on(QueryCommand).resolves({ Items: activeCheckIns });
       ddbMock.on(GetCommand).resolves({}); // No family found
 
-      await expect(validatePinForCheckout('4289')).rejects.toThrow('Family not found');
+      await expect(validatePinForCheckout({ pin: '4289' })).rejects.toThrow('Family not found');
     });
   });
 
@@ -461,7 +467,7 @@ describe('checkInService', () => {
       });
 
       ddbMock.on(UpdateCommand).resolves({});
-      const result = await adminCheckOut('chk-123', 'Sarah Johnson');
+      const result = await adminCheckOut('chk-123', { checkedOutBy: 'Sarah Johnson' });
 
       expect(result.checkIn.status).toBe(CHECK_IN_STATUS.COMPLETED);
       expect(result.checkIn.checkOutTime).toBeDefined();
@@ -472,7 +478,7 @@ describe('checkInService', () => {
     });
 
     it('should throw error if checkedOutBy is empty', async () => {
-      await expect(adminCheckOut('chk-123', '')).rejects.toThrow(
+      await expect(adminCheckOut('chk-123', { checkedOutBy: '' })).rejects.toThrow(
         'Name of person picking up is required'
       );
     });
@@ -480,9 +486,9 @@ describe('checkInService', () => {
     it('should throw error if check-in not found', async () => {
       ddbMock.on(GetCommand).resolves({});
 
-      await expect(adminCheckOut('chk-nonexistent', 'Sarah Johnson')).rejects.toThrow(
-        'Check-in not found'
-      );
+      await expect(
+        adminCheckOut('chk-nonexistent', { checkedOutBy: 'Sarah Johnson' })
+      ).rejects.toThrow('Check-in not found');
     });
 
     it('should throw error if already checked out', async () => {
@@ -505,7 +511,7 @@ describe('checkInService', () => {
 
       ddbMock.on(GetCommand).resolves({ Item: mockCheckIn });
 
-      await expect(adminCheckOut('chk-123', 'Sarah Johnson')).rejects.toThrow(
+      await expect(adminCheckOut('chk-123', { checkedOutBy: 'Sarah Johnson' })).rejects.toThrow(
         'Child already checked out'
       );
     });
@@ -532,7 +538,7 @@ describe('checkInService', () => {
       ddbMock.on(UpdateCommand).resolves({});
       ddbMock.on(GetCommand).resolvesOnce({ Item: { firstName: 'Emma' } });
 
-      const result = await adminCheckOut('chk-123', '  Sarah Johnson  ');
+      const result = await adminCheckOut('chk-123', { checkedOutBy: '  Sarah Johnson  ' });
 
       expect(result.checkIn.checkedOutBy).toBe('Sarah Johnson');
     });
@@ -570,7 +576,7 @@ describe('checkInService', () => {
       ddbMock.on(UpdateCommand).resolves({});
       // ddbMock.on(GetCommand).resolvesOnce({}); // Child not found
 
-      const result = await adminCheckOut('chk-123', 'Sarah Johnson');
+      const result = await adminCheckOut('chk-123', { checkedOutBy: 'Sarah Johnson' });
 
       expect(result.checkIn.status).toBe(CHECK_IN_STATUS.COMPLETED);
       expect(result.childName).toBeUndefined();
@@ -598,7 +604,11 @@ describe('checkInService', () => {
       ddbMock.on(UpdateCommand).resolves({});
       ddbMock.on(GetCommand).resolvesOnce({ Item: { firstName: 'Emma' } });
 
-      const result = await adminCheckOut('chk-123', 'Sarah Johnson', 'user-admin-1');
+      const result = await adminCheckOut(
+        'chk-123',
+        { checkedOutBy: 'Sarah Johnson' },
+        'user-admin-1'
+      );
 
       expect(result.checkIn.checkedOutByUserId).toBe('user-admin-1');
     });

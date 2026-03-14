@@ -25,14 +25,14 @@ export function KioskCheckOutPage() {
   const [checkedOutChildren, setCheckedOutChildren] = useState<Array<{ childName?: string }>>([]);
   const [message, setMessage] = useState('');
 
-  const handleSubmitPIN = async (enteredPin: string) => {
+  const handleSubmitPIN = async (pin: string) => {
     setIsLoading(true);
     setError(null);
-    setPin(enteredPin);
+    setPin(pin);
 
     try {
       // Validate PIN and get family info
-      const info = await validatePinForCheckout(enteredPin);
+      const info = await validatePinForCheckout({ pin });
       setFamilyInfo(info);
       setStep('select-parent');
     } catch (err) {
@@ -65,12 +65,12 @@ export function KioskCheckOutPage() {
     await handleCheckout(name.trim());
   };
 
-  const handleCheckout = async (checkoutName: string) => {
+  const handleCheckout = async (checkedOutBy: string) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const result = await checkOutByPin(pin, checkoutName);
+      const result = await checkOutByPin({ pin, checkedOutBy });
       setCheckedOutChildren(result.checkIns);
       setMessage(result.message);
       setStep('success');
