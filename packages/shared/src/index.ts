@@ -6,9 +6,10 @@
  */
 
 // Export all types
-export * from './types/Family.js';
-export * from './types/Person.js';
+export * from './types/ApiError.js';
 export * from './types/CheckIn.js';
 export * from './types/Event.js';
 export * from './types/EventRegistration.js';
+export * from './types/Family.js';
+export * from './types/Person.js';
 export * from './constants/constants.js';
