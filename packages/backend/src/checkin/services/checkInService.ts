@@ -79,7 +79,7 @@ export async function checkInChild(data: CheckInChildRequest): Promise<CheckInCh
   );
 
   if (existingCheckIns.Items && existingCheckIns.Items.length > 0) {
-    throw new Error('Child is already checked in');
+    throw new AppError(ERROR_CODE.ALREADY_CHECKED_IN, 'Child is already checked in');
   }
 
   const checkInId = `chk-${Date.now()}-${generateRandomId()}`;
