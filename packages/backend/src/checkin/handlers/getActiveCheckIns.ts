@@ -1,6 +1,7 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { getActiveCheckIns } from '../services/checkInService.js';
-import { success, serverError } from '../../shared/utils/response';
+import { success, serverError, appErrorResponse } from '../../shared/utils/response';
+import { AppError } from '../../shared/utils/AppError';
 
 /**
  * Lambda handler for GET /checkin/active
@@ -45,10 +46,10 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
   } catch (error) {
     console.error('Error in getActiveCheckIns handler:', error);
 
-    if (error instanceof Error) {
-      return serverError(error.message);
+    if (error instanceof AppError) {
+      return appErrorResponse(error);
     }
 
-    return serverError('Failed to retrieve active check-ins');
+    return serverError();
   }
 }

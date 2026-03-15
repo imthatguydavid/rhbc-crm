@@ -1,7 +1,12 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { bulkCheckInChildren } from '../services/checkInService.js';
-import { success, badRequest, serverError } from '../../shared/utils/response.js';
-import { BulkCheckInChildrenRequest, BulkCheckInChildrenResponse } from '@rhbc-crm/shared';
+import { success, badRequest, serverError, appErrorResponse } from '../../shared/utils/response.js';
+import {
+  BulkCheckInChildrenRequest,
+  BulkCheckInChildrenResponse,
+  ERROR_CODE,
+} from '@rhbc-crm/shared';
+import { AppError } from '../../shared/utils/AppError';
 
 /**
  * Lambda handler for bulk checking in multiple children with one PIN.
@@ -24,7 +29,7 @@ import { BulkCheckInChildrenRequest, BulkCheckInChildrenResponse } from '@rhbc-c
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     if (!event.body) {
-      return badRequest('Request body is required');
+      return badRequest(ERROR_CODE.MISSING_REQUIRED_FIELD, 'Request body is required');
     }
 
     const request: BulkCheckInChildrenRequest = JSON.parse(event.body);
@@ -32,15 +37,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Validation
     if (!familyId) {
-      return badRequest('familyId is required');
+      return badRequest(ERROR_CODE.MISSING_REQUIRED_FIELD, 'familyId is required');
     }
 
     if (!childIds || !Array.isArray(childIds) || childIds.length === 0) {
-      return badRequest('childIds must be a non-empty array');
+      return badRequest(ERROR_CODE.MISSING_REQUIRED_FIELD, 'childIds must be a non-empty array');
     }
 
     if (!room) {
-      return badRequest('room is required');
+      return badRequest(ERROR_CODE.MISSING_REQUIRED_FIELD, 'room is required');
     }
 
     // Bulk check-in
@@ -53,13 +58,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     return success(result);
   } catch (error) {
     console.error('Error in bulkCheckIn handler:', error);
-
-    if (error instanceof Error) {
-      if (error.message.includes('already checked in')) {
-        return badRequest(error.message);
-      }
+    if (error instanceof AppError) {
+      return appErrorResponse(error);
     }
 
-    return serverError('Failed to check in children');
+    return serverError();
   }
 };

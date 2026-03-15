@@ -1,6 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getCompletedCheckIns } from '../services/checkInService.js';
-import { success, serverError } from '../../shared/utils/response.js';
+import { success, serverError, appErrorResponse } from '../../shared/utils/response.js';
+import { AppError } from '../../shared/utils/AppError';
 
 /**
  * Lambda handler for getting completed check-ins.
@@ -19,6 +20,11 @@ export const handler: APIGatewayProxyHandler = async () => {
     return success({ checkIns });
   } catch (error) {
     console.error('Error in getCompletedCheckIns handler:', error);
-    return serverError('Failed to fetch completed check-ins');
+
+    if (error instanceof AppError) {
+      return appErrorResponse(error);
+    }
+
+    return serverError();
   }
 };
