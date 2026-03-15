@@ -1,6 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { deletePerson } from '../services/familyService.js';
-import { success, badRequest, notFound, serverError } from '../../shared/utils/response.js';
+import { success, badRequest, serverError, appErrorResponse } from '../../shared/utils/response.js';
+import { ERROR_CODE } from '@rhbc-crm/shared';
+import { AppError } from '../../shared/utils/AppError';
 
 /**
  * Lambda handler for soft deleting a person.
@@ -17,7 +19,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Parse person ID from path
     const personId = event.pathParameters?.id;
     if (!personId) {
-      return badRequest('Person ID is required');
+      return badRequest(ERROR_CODE.MISSING_REQUIRED_FIELD, 'Person ID is required');
     }
 
     // Soft delete the person
@@ -30,15 +32,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   } catch (error) {
     console.error('Error deleting person:', error);
 
-    if (error instanceof Error) {
-      if (error.message === 'Person not found') {
-        return notFound('Person not found');
-      }
-      if (error.message === 'Person already deleted') {
-        return badRequest('Person already deleted');
-      }
+    if (error instanceof AppError) {
+      return appErrorResponse(error);
     }
 
-    return serverError('Failed to delete person');
+    return serverError();
   }
 };

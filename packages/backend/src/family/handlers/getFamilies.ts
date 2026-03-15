@@ -1,6 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getAllFamilies } from '../services/familyService.js';
-import { success, serverError } from '../../shared/utils/response.js';
+import { success, serverError, badRequest, appErrorResponse } from '../../shared/utils/response.js';
+import { ERROR_CODE } from '@rhbc-crm/shared';
+import { AppError } from '../../shared/utils/AppError';
 
 /**
  * Lambda handler for getting all families with optional filtering.
@@ -27,16 +29,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Validate status if provided
     if (status && status !== 'member' && status !== 'guest') {
-      return {
-        statusCode: 400,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-        },
-        body: JSON.stringify({
-          error: 'status must be either "member" or "guest"',
-        }),
-      };
+      return badRequest(ERROR_CODE.INVALID_STATUS, 'Status must be either "member" or "guest"');
     }
 
     // Get families with filters
@@ -53,6 +46,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     });
   } catch (error) {
     console.error('Error getting families:', error);
-    return serverError('Failed to get families');
+    if (error instanceof AppError) {
+      return appErrorResponse(error);
+    }
+    return serverError();
   }
 };

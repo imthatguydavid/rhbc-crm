@@ -1,12 +1,14 @@
 import { GetCommand, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import {
   AddChildToFamilyRequest,
+  ERROR_CODE,
   Family,
   Person,
   UpdateFamilyRequest,
   UpdatePersonRequest,
 } from '@rhbc-crm/shared';
 import { dynamoDb, Tables } from '../../shared/utils/dynamodb';
+import { AppError } from '../../shared/utils/AppError';
 
 /**
  * Generates a unique family ID with timestamp
@@ -205,7 +207,7 @@ export async function getFamilyById(familyId: string): Promise<Family | null> {
     return (result.Item as Family) || null;
   } catch (error) {
     console.error('Error getting family:', error);
-    throw new Error('Failed to retrieve family');
+    throw error;
   }
 }
 
@@ -307,8 +309,8 @@ export async function getAllPeople(): Promise<Person[]> {
 
     return (result.Items || []) as Person[];
   } catch (error) {
-    console.error('Error getting all people:', error);
-    throw new Error('Failed to retrieve people');
+    console.error('Error getting family:', error);
+    throw error;
   }
 }
 
@@ -327,17 +329,14 @@ export async function addChildToFamily(
   familyId: string,
   childData: AddChildToFamilyRequest
 ): Promise<Person> {
-  // 1. Verify family exists
   const family = await getFamilyById(familyId);
   if (!family) {
-    throw new Error('Family not found');
+    throw new AppError(ERROR_CODE.FAMILY_NOT_FOUND, 'Family not found', 404);
   }
 
-  // 2. Generate child ID and timestamp
   const personId = generatePersonId();
   const now = new Date().toISOString();
 
-  // 3. Create child record
   const request: Person = {
     personId,
     familyId,
@@ -349,7 +348,6 @@ export async function addChildToFamily(
     updatedAt: now,
   };
 
-  // 4. Save to database
   return await createPerson(request);
 }
 
@@ -370,7 +368,7 @@ export async function updatePerson(
   // 1. Get existing person
   const existingPerson = await getPersonById(personId);
   if (!existingPerson) {
-    throw new Error('Person not found');
+    throw new AppError(ERROR_CODE.PERSON_NOT_FOUND, 'Person not found', 404);
   }
 
   // 2. Build update expression dynamically
@@ -431,13 +429,12 @@ export async function updateFamily(
   familyId: string,
   updates: UpdateFamilyRequest
 ): Promise<Family> {
-  // 1. Get existing family
   const existingFamily = await getFamilyById(familyId);
   if (!existingFamily) {
-    throw new Error('Family not found');
+    throw new AppError(ERROR_CODE.FAMILY_NOT_FOUND, 'Family not found', 404);
   }
 
-  // 2. Build update expression dynamically
+  // 1. Build update expression dynamically
   const updateExpressions: string[] = [];
   const expressionAttributeNames: Record<string, string> = {};
   const expressionAttributeValues: Record<string, any> = {};
@@ -460,7 +457,7 @@ export async function updateFamily(
   expressionAttributeNames['#updatedAt'] = 'updatedAt';
   expressionAttributeValues[':updatedAt'] = new Date().toISOString();
 
-  // 3. Update in database
+  // 2. Update in database
   const result = await dynamoDb.send(
     new UpdateCommand({
       TableName: Tables.FAMILIES,
@@ -489,12 +486,12 @@ export async function deletePerson(personId: string): Promise<Person> {
   // 1. Get existing person
   const existingPerson = await getPersonById(personId);
   if (!existingPerson) {
-    throw new Error('Person not found');
+    throw new AppError(ERROR_CODE.PERSON_NOT_FOUND, 'Person not found', 404);
   }
 
   // 2. Check if already deleted
   if (existingPerson.deletedAt) {
-    throw new Error('Person already deleted');
+    throw new AppError(ERROR_CODE.ALREADY_DELETED, 'Person already deleted');
   }
 
   // 3. Mark as deleted
@@ -534,12 +531,12 @@ export async function deleteFamily(familyId: string): Promise<Family> {
   // 1. Verify family exists
   const existingFamily = await getFamilyById(familyId);
   if (!existingFamily) {
-    throw new Error('Family not found');
+    throw new AppError(ERROR_CODE.FAMILY_NOT_FOUND, 'Family not found', 404);
   }
 
   // 2. Check if already deleted
-  if ((existingFamily as any).deletedAt) {
-    throw new Error('Family already deleted');
+  if (existingFamily.deletedAt) {
+    throw new AppError(ERROR_CODE.ALREADY_DELETED, 'Family already deleted');
   }
 
   const now = new Date().toISOString();

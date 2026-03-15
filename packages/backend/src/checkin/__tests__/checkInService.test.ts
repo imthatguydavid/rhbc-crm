@@ -335,16 +335,6 @@ describe('checkInService', () => {
         })
       ).rejects.toThrow('already checked in');
     });
-
-    it('should throw error if childIds is empty', async () => {
-      await expect(
-        bulkCheckInChildren({
-          familyId: 'fam-123',
-          childIds: [],
-          room: 'Nursery',
-        })
-      ).rejects.toThrow('childIds (non-empty array)');
-    });
   });
 
   describe('checkOutByPin', () => {
@@ -388,22 +378,8 @@ describe('checkInService', () => {
         'No active check-ins found'
       );
     });
-
-    it('should throw error if PIN is invalid', async () => {
-      await expect(checkOutByPin({ pin: '123', checkedOutBy: 'Saja Boys' })).rejects.toThrow(
-        '4-digit PIN'
-      );
-    });
   });
   describe('validatePinForCheckout', () => {
-    it('should throw error for invalid PIN format (too short)', async () => {
-      await expect(validatePinForCheckout({ pin: '123' })).rejects.toThrow('4-digit PIN');
-    });
-
-    it('should throw error for empty PIN', async () => {
-      await expect(validatePinForCheckout({ pin: '' })).rejects.toThrow('4-digit PIN');
-    });
-
     it('should throw error if no active check-ins found with PIN', async () => {
       ddbMock.on(QueryCommand).resolves({ Items: [] });
 

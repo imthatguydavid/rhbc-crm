@@ -1,6 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { deleteFamily } from '../services/familyService.js';
-import { success, badRequest, notFound, serverError } from '../../shared/utils/response.js';
+import { success, badRequest, serverError, appErrorResponse } from '../../shared/utils/response.js';
+import { ERROR_CODE } from '@rhbc-crm/shared';
+import { AppError } from '../../shared/utils/AppError';
 
 /**
  * Lambda handler for soft deleting a family and all its members.
@@ -16,7 +18,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     const familyId = event.pathParameters?.id;
     if (!familyId) {
-      return badRequest('Family ID is required');
+      return badRequest(ERROR_CODE.MISSING_REQUIRED_FIELD, 'Family ID is required');
     }
 
     const family = await deleteFamily(familyId);
@@ -28,15 +30,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   } catch (error) {
     console.error('Error deleting family:', error);
 
-    if (error instanceof Error) {
-      if (error.message === 'Family not found') {
-        return notFound('Family not found');
-      }
-      if (error.message === 'Family already deleted') {
-        return badRequest('Family already deleted');
-      }
+    if (error instanceof AppError) {
+      return appErrorResponse(error);
     }
 
-    return serverError('Failed to delete family');
+    return serverError();
   }
 };

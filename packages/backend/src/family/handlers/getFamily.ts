@@ -1,6 +1,14 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { getFamilyById, getPeopleByFamily } from '../services/familyService.js';
-import { success, badRequest, notFound, serverError } from '../../shared/utils/response';
+import {
+  success,
+  badRequest,
+  notFound,
+  serverError,
+  appErrorResponse,
+} from '../../shared/utils/response';
+import { ERROR_CODE } from '@rhbc-crm/shared';
+import { AppError } from '../../shared/utils/AppError';
 
 /**
  * Lambda handler for GET /families/{id}
@@ -14,14 +22,14 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
     const familyId = event.pathParameters?.id;
 
     if (!familyId) {
-      return badRequest('Family ID is required');
+      return badRequest(ERROR_CODE.MISSING_REQUIRED_FIELD, 'Family ID is required');
     }
 
     // Get family
     const family = await getFamilyById(familyId);
 
     if (!family) {
-      return notFound(`Family with ID ${familyId} not found`);
+      return notFound(ERROR_CODE.FAMILY_NOT_FOUND, `Family with ID ${familyId} not found`);
     }
 
     // Get all people in this family
@@ -35,6 +43,9 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
     });
   } catch (error) {
     console.error('Error in getFamily handler:', error);
-    return serverError('Failed to retrieve family');
+    if (error instanceof AppError) {
+      return appErrorResponse(error);
+    }
+    return serverError();
   }
 }
