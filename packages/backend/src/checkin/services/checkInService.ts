@@ -165,7 +165,7 @@ export async function getActiveCheckIns(): Promise<CheckIn[]> {
 export async function checkOutChild({ checkInId, pin }: CheckOutChildRequest): Promise<CheckIn> {
   // Validate PIN format (4 digits)
   if (!/^\d{4}$/.test(pin)) {
-    throw new Error('PIN must be 4 digits');
+    throw new AppError(ERROR_CODE.INVALID_FORMAT, 'PIN must be 4 digits');
   }
 
   try {
@@ -178,19 +178,19 @@ export async function checkOutChild({ checkInId, pin }: CheckOutChildRequest): P
     );
 
     if (!getResult.Item) {
-      throw new Error('Check-in not found');
+      throw new AppError(ERROR_CODE.CHECKIN_NOT_FOUND, 'Check-in not found', 404);
     }
 
     const checkIn = getResult.Item as CheckIn;
 
     // Verify PIN
     if (checkIn.checkOutPin !== pin) {
-      throw new Error('Invalid PIN');
+      throw new AppError(ERROR_CODE.INVALID_PIN, 'Invalid PIN');
     }
 
     // Check if already checked out
     if (checkIn.status === CHECK_IN_STATUS.COMPLETED) {
-      throw new Error('Child already checked out');
+      throw new AppError(ERROR_CODE.ALREADY_CHECKED_OUT, 'Child already checked out');
     }
 
     // Update check-out time and status
