@@ -13,10 +13,13 @@ import {
   ValidatePinRequest,
   ValidatePinResponse,
   AdminCheckOutRequest,
+  ERROR_CODE,
+  CHECK_IN_STATUS,
+  CHECKOUT_METHOD,
 } from '@rhbc-crm/shared';
+import { AppError } from '../../shared/utils/AppError';
 import { dynamoDb, Tables } from '../../shared/utils/dynamodb';
 import { getPeopleByFamily } from '../../family/services/familyService';
-import { CHECK_IN_STATUS, CHECKOUT_METHOD } from '@rhbc-crm/shared';
 
 /**
  * Generates a random 6-character alphanumeric string for IDs
@@ -31,6 +34,29 @@ function generateRandomId(): string {
  */
 function generatePin(): string {
   return Math.floor(1000 + Math.random() * 9000).toString();
+}
+
+/**
+ * Creates a new check-in record
+ */
+async function createCheckIn(checkIn: CheckIn): Promise<CheckIn> {
+  try {
+    await dynamoDb.send(
+      new PutCommand({
+        TableName: Tables.CHECKINS,
+        Item: checkIn,
+        ConditionExpression: 'attribute_not_exists(checkInId)',
+      })
+    );
+
+    return checkIn;
+  } catch (error) {
+    if ((error as any).name === 'ConditionalCheckFailedException') {
+      throw new Error('Check-in with this ID already exists');
+    }
+    console.error('Error creating check-in:', error);
+    throw new Error('Failed to create check-in');
+  }
 }
 
 /**
@@ -76,7 +102,7 @@ export async function checkInChild(data: CheckInChildRequest): Promise<CheckInCh
   );
 
   if (existingCheckIns.Items && existingCheckIns.Items.length > 0) {
-    throw new Error('Child is already checked in');
+    throw new AppError(ERROR_CODE.ALREADY_CHECKED_IN, 'Child is already checked in');
   }
 
   const checkInId = `chk-${Date.now()}-${generateRandomId()}`;
@@ -103,29 +129,6 @@ export async function checkInChild(data: CheckInChildRequest): Promise<CheckInCh
   await createCheckIn(checkIn);
 
   return { checkIn, pin };
-}
-
-/**
- * Creates a new check-in record
- */
-export async function createCheckIn(checkIn: CheckIn): Promise<CheckIn> {
-  try {
-    await dynamoDb.send(
-      new PutCommand({
-        TableName: Tables.CHECKINS,
-        Item: checkIn,
-        ConditionExpression: 'attribute_not_exists(checkInId)',
-      })
-    );
-
-    return checkIn;
-  } catch (error) {
-    if ((error as any).name === 'ConditionalCheckFailedException') {
-      throw new Error('Check-in with this ID already exists');
-    }
-    console.error('Error creating check-in:', error);
-    throw new Error('Failed to create check-in');
-  }
 }
 
 /**
@@ -162,7 +165,7 @@ export async function getActiveCheckIns(): Promise<CheckIn[]> {
 export async function checkOutChild({ checkInId, pin }: CheckOutChildRequest): Promise<CheckIn> {
   // Validate PIN format (4 digits)
   if (!/^\d{4}$/.test(pin)) {
-    throw new Error('PIN must be 4 digits');
+    throw new AppError(ERROR_CODE.INVALID_FORMAT, 'PIN must be 4 digits');
   }
 
   try {
@@ -175,19 +178,19 @@ export async function checkOutChild({ checkInId, pin }: CheckOutChildRequest): P
     );
 
     if (!getResult.Item) {
-      throw new Error('Check-in not found');
+      throw new AppError(ERROR_CODE.CHECKIN_NOT_FOUND, 'Check-in not found', 404);
     }
 
     const checkIn = getResult.Item as CheckIn;
 
     // Verify PIN
     if (checkIn.checkOutPin !== pin) {
-      throw new Error('Invalid PIN');
+      throw new AppError(ERROR_CODE.INVALID_PIN, 'Invalid PIN');
     }
 
     // Check if already checked out
     if (checkIn.status === CHECK_IN_STATUS.COMPLETED) {
-      throw new Error('Child already checked out');
+      throw new AppError(ERROR_CODE.ALREADY_CHECKED_OUT, 'Child already checked out');
     }
 
     // Update check-out time and status
@@ -253,13 +256,7 @@ export async function bulkCheckInChildren(
 ): Promise<BulkCheckInChildrenResponse> {
   const { familyId, childIds, room } = data;
 
-  // Validation
-  if (!familyId || !childIds || childIds.length === 0 || !room) {
-    throw new Error('familyId, childIds (non-empty array), and room are required');
-  }
-
   try {
-    // Generate ONE PIN for all children
     const pin = generatePin();
     const checkInTime = new Date().toISOString();
     const checkIns: CheckIn[] = [];
@@ -268,7 +265,7 @@ export async function bulkCheckInChildren(
     for (const childId of childIds) {
       const existingCheckIn = await getActiveCheckInByChild(childId);
       if (existingCheckIn) {
-        throw new Error(`Child ${childId} is already checked in`);
+        throw new AppError(ERROR_CODE.ALREADY_CHECKED_IN, `Child ${childId} is already checked in`);
       }
     }
 
@@ -340,23 +337,14 @@ export async function bulkCheckInChildren(
 export async function checkOutByPin(request: CheckOutByPinRequest): Promise<CheckOutByPinResponse> {
   const { pin, checkedOutBy } = request;
 
-  if (!pin || pin.length !== 4) {
-    throw new Error('Valid 4-digit PIN is required');
-  }
-
-  if (!checkedOutBy || !checkedOutBy.trim()) {
-    throw new Error('Name of person picking up is required');
-  }
-
   try {
-    // Get all active check-ins
     const activeCheckIns = await getActiveCheckIns();
 
     // Filter by PIN
     const matchingCheckIns = activeCheckIns.filter((checkIn) => checkIn.checkOutPin === pin);
 
     if (matchingCheckIns.length === 0) {
-      throw new Error('No active check-ins found with that PIN');
+      throw new AppError(ERROR_CODE.NO_ACTIVE_CHECKINS, 'No active check-ins found with that PIN');
     }
 
     const checkOutTime = new Date().toISOString();
@@ -489,24 +477,17 @@ async function getActiveCheckInByChild(childId: string): Promise<CheckIn | null>
 export async function validatePinForCheckout(
   request: ValidatePinRequest
 ): Promise<ValidatePinResponse> {
-  if (!request.pin || request.pin.length !== 4) {
-    throw new Error('Valid 4-digit PIN is required');
-  }
-
   try {
-    // Get all active check-ins
     const activeCheckIns = await getActiveCheckIns();
 
-    // Filter by PIN
     const matchingCheckIns = activeCheckIns.filter(
       (checkIn) => checkIn.checkOutPin === request.pin
     );
 
     if (matchingCheckIns.length === 0) {
-      throw new Error('No active check-ins found with that PIN');
+      throw new AppError(ERROR_CODE.NO_ACTIVE_CHECKINS, 'No active check-ins found with that PIN');
     }
 
-    // All check-ins for same PIN should have same familyId
     const familyId = matchingCheckIns[0].familyId;
 
     // Get family details
@@ -521,7 +502,7 @@ export async function validatePinForCheckout(
 
     const family = familyResult.Item as Family | undefined;
     if (!family) {
-      throw new Error('Family not found');
+      throw new AppError(ERROR_CODE.FAMILY_NOT_FOUND, 'Family not found', 404);
     }
 
     // Get all family members
@@ -585,7 +566,7 @@ export async function adminCheckOut(
   const { checkedOutBy } = request;
 
   if (!checkedOutBy || !checkedOutBy.trim()) {
-    throw new Error('Name of person picking up is required');
+    throw new AppError(ERROR_CODE.MISSING_REQUIRED_FIELD, 'Name of person picking up is required');
   }
 
   try {
@@ -598,13 +579,13 @@ export async function adminCheckOut(
     );
 
     if (!getResult.Item) {
-      throw new Error('Check-in not found');
+      throw new AppError(ERROR_CODE.CHECKIN_NOT_FOUND, 'Check-in not found', 404);
     }
 
     const checkIn = getResult.Item as CheckIn;
     // Check if already checked out
     if (checkIn.status === CHECK_IN_STATUS.COMPLETED) {
-      throw new Error('Child already checked out');
+      throw new AppError(ERROR_CODE.ALREADY_CHECKED_OUT, 'Child already checked out');
     }
 
     // Update check-out time and status

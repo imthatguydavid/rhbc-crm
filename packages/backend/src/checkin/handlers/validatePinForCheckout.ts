@@ -1,7 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { validatePinForCheckout } from '../services/checkInService.js';
-import { success, badRequest, serverError } from '../../shared/utils/response.js';
-import { ValidatePinRequest, ValidatePinResponse } from '@rhbc-crm/shared';
+import { success, badRequest, serverError, appErrorResponse } from '../../shared/utils/response.js';
+import { ERROR_CODE, ValidatePinRequest, ValidatePinResponse } from '@rhbc-crm/shared';
+import { AppError } from '../../shared/utils/AppError';
 
 /**
  * Lambda handler for validating a PIN before checkout.
@@ -22,13 +23,17 @@ import { ValidatePinRequest, ValidatePinResponse } from '@rhbc-crm/shared';
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     if (!event.body) {
-      return badRequest('Request body is required');
+      return badRequest(ERROR_CODE.MISSING_REQUIRED_FIELD, 'Request body is required');
     }
 
     const request: ValidatePinRequest = JSON.parse(event.body);
 
     if (!request.pin) {
-      return badRequest('PIN is required');
+      return badRequest(ERROR_CODE.MISSING_REQUIRED_FIELD, 'PIN is required');
+    }
+
+    if (request.pin.length !== 4) {
+      return badRequest(ERROR_CODE.INVALID_FORMAT, 'Valid 4-digit PIN is required');
     }
 
     // Validate PIN and get family info
@@ -38,12 +43,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   } catch (error) {
     console.error('Error in validatePinForCheckout handler:', error);
 
-    if (error instanceof Error) {
-      if (error.message.includes('No active check-ins') || error.message.includes('required')) {
-        return badRequest(error.message);
-      }
+    if (error instanceof AppError) {
+      return appErrorResponse(error);
     }
 
-    return serverError('Failed to validate PIN');
+    return serverError();
   }
 };

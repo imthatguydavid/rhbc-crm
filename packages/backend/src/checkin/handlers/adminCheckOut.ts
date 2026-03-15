@@ -1,7 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { adminCheckOut } from '../services/checkInService.js';
-import { success, badRequest, serverError } from '../../shared/utils/response.js';
-import { AdminCheckOutRequest, AdminCheckOutResponse } from '@rhbc-crm/shared';
+import { success, badRequest, serverError, appErrorResponse } from '../../shared/utils/response.js';
+import { AppError } from '../../shared/utils/AppError';
+import { AdminCheckOutRequest, AdminCheckOutResponse, ERROR_CODE } from '@rhbc-crm/shared';
 
 /**
  * Lambda handler for admin checkout (no PIN required).
@@ -24,18 +25,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const checkInId = event.pathParameters?.checkInId;
 
     if (!checkInId) {
-      return badRequest('Check-in ID is required');
+      return badRequest(ERROR_CODE.MISSING_REQUIRED_FIELD, 'Check-in ID is required');
     }
 
     if (!event.body) {
-      return badRequest('Request body is required');
+      return badRequest(ERROR_CODE.MISSING_REQUIRED_FIELD, 'Request body is required');
     }
 
     const request: AdminCheckOutRequest = JSON.parse(event.body);
     const { checkedOutBy } = request;
 
     if (!checkedOutBy) {
-      return badRequest('Name of person picking up is required');
+      return badRequest(ERROR_CODE.MISSING_REQUIRED_FIELD, 'Name of person picking up is required');
     }
 
     // TODO: Get adminUserId from Cognito token when auth is implemented
@@ -45,16 +46,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   } catch (error) {
     console.error('Error in adminCheckOut handler:', error);
 
-    if (error instanceof Error) {
-      if (
-        error.message.includes('not found') ||
-        error.message.includes('required') ||
-        error.message.includes('already checked out')
-      ) {
-        return badRequest(error.message);
-      }
+    if (error instanceof AppError) {
+      return appErrorResponse(error);
     }
 
-    return serverError('Failed to check out child');
+    return serverError();
   }
 };

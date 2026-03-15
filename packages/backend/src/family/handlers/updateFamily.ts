@@ -1,7 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { updateFamily } from '../services/familyService.js';
-import { success, badRequest, notFound, serverError } from '../../shared/utils/response.js';
-import { UpdateFamilyRequest } from '@rhbc-crm/shared';
+import { success, badRequest, serverError, appErrorResponse } from '../../shared/utils/response.js';
+import { ERROR_CODE, UpdateFamilyRequest } from '@rhbc-crm/shared';
+import { AppError } from '../../shared/utils/AppError';
 
 /**
  * Lambda handler for updating a family's information.
@@ -18,10 +19,14 @@ import { UpdateFamilyRequest } from '@rhbc-crm/shared';
  */
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
+    if (!event.body) {
+      return badRequest(ERROR_CODE.MISSING_REQUIRED_FIELD, 'Request body is required');
+    }
+
     // Parse family ID from path
     const familyId = event.pathParameters?.id;
     if (!familyId) {
-      return badRequest('Family ID is required');
+      return badRequest(ERROR_CODE.MISSING_REQUIRED_FIELD, 'Family ID is required');
     }
 
     // Parse request body
@@ -30,17 +35,20 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Validate at least one field is provided
     if (!lastName && !status) {
-      return badRequest('At least one field must be provided to update');
+      return badRequest(
+        ERROR_CODE.NO_UPDATE_FIELDS,
+        'At least one field must be provided to update'
+      );
     }
 
     // Validate lastName if provided
     if (lastName !== undefined && (typeof lastName !== 'string' || lastName.trim().length < 2)) {
-      return badRequest('lastName must be at least 2 characters');
+      return badRequest(ERROR_CODE.INVALID_FORMAT, 'lastName must be at least 2 characters');
     }
 
     // Validate status if provided
     if (status !== undefined && status !== 'member' && status !== 'guest') {
-      return badRequest('status must be either "member" or "guest"');
+      return badRequest(ERROR_CODE.INVALID_STATUS, 'status must be either "member" or "guest"');
     }
 
     // Update family
@@ -54,10 +62,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   } catch (error) {
     console.error('Error updating family:', error);
 
-    if (error instanceof Error && error.message === 'Family not found') {
-      return notFound('Family not found');
+    if (error instanceof AppError) {
+      return appErrorResponse(error);
     }
 
-    return serverError('Failed to update family');
+    return serverError();
   }
 };

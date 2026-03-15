@@ -20,6 +20,7 @@
     "backend:offline": "yarn workspace @rhbc-crm/backend offline",
     "backend:test": "yarn workspace @rhbc-crm/backend test",
     "backend:logs": "yarn workspace @rhbc-crm/backend logs:checkIn",
+    "backend:check": "yarn workspace @rhbc-crm/backend type-check",
     "build": "yarn workspace @rhbc-crm/shared build"
   },
   "devDependencies": {

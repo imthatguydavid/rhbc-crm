@@ -1,3 +1,6 @@
+import { ERROR_CODE, type ErrorCode } from '@rhbc-crm/shared';
+import { AppError } from './AppError.js';
+
 /**
  * Standard API response format for AWS Lambda
  */
@@ -13,7 +16,7 @@ export interface ApiResponse {
 const corsHeaders = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Credentials': 'true', // ← Fixed: string not boolean
+  'Access-Control-Allow-Credentials': 'true',
 };
 
 /**
@@ -39,33 +42,42 @@ export function created<T>(data: T): ApiResponse {
 }
 
 /**
- * Create error response (400/500)
+ * Create standardized error response
  */
-export function error(statusCode: number, message: string): ApiResponse {
+export function errorResponse(statusCode: number, code: ErrorCode, message: string): ApiResponse {
   return {
     statusCode,
     headers: corsHeaders,
-    body: JSON.stringify({ error: message }),
+    body: JSON.stringify({
+      error: { code, message },
+    }),
   };
 }
 
 /**
- * Create bad request response (400)
+ * 400 Bad Request
  */
-export function badRequest(message: string): ApiResponse {
-  return error(400, message);
+export function badRequest(code: ErrorCode, message: string): ApiResponse {
+  return errorResponse(400, code, message);
 }
 
 /**
- * Create not found response (404)
+ * 404 Not Found
  */
-export function notFound(message: string = 'Resource not found'): ApiResponse {
-  return error(404, message);
+export function notFound(code: ErrorCode, message: string): ApiResponse {
+  return errorResponse(404, code, message);
 }
 
 /**
- * Create internal server error response (500)
+ * 500 Internal Server Error — always uses generic message
  */
-export function serverError(message: string = 'Internal server error'): ApiResponse {
-  return error(500, message);
+export function serverError(): ApiResponse {
+  return errorResponse(500, ERROR_CODE.INTERNAL_ERROR, 'Internal server error');
+}
+
+/**
+ * Create error response from AppError
+ */
+export function appErrorResponse(error: AppError): ApiResponse {
+  return errorResponse(error.statusCode, error.code, error.message);
 }

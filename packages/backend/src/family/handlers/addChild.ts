@@ -1,7 +1,9 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { addChildToFamily } from '../services/familyService.js';
-import { created, badRequest, notFound, serverError } from '../../shared/utils/response.js';
-import { AddChildToFamilyRequest, Person } from '@rhbc-crm/shared';
+import { created, badRequest, serverError } from '../../shared/utils/response.js';
+import { AddChildToFamilyRequest, Person, ERROR_CODE } from '@rhbc-crm/shared';
+import { appErrorResponse } from '../../shared/utils/response.js';
+import { AppError } from '../../shared/utils/AppError';
 
 /**
  * Lambda handler for adding a child to a family.
@@ -22,7 +24,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     // Parse family ID from path
     const familyId = event.pathParameters?.id;
     if (!familyId) {
-      return badRequest('Family ID is required');
+      return badRequest(ERROR_CODE.MISSING_REQUIRED_FIELD, 'Family ID is required');
     }
 
     // Parse request body
@@ -30,8 +32,12 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const { firstName, phone, email } = request;
 
     // Validate required fields
-    if (!firstName || typeof firstName !== 'string' || firstName.trim().length < 2) {
-      return badRequest('firstName is required and must be at least 2 characters');
+    if (!firstName) {
+      return badRequest(ERROR_CODE.MISSING_REQUIRED_FIELD, 'First name is required');
+    }
+
+    if (firstName.trim().length < 2) {
+      return badRequest(ERROR_CODE.INVALID_FORMAT, 'First name must be at least 2 characters');
     }
 
     // Call service to handle business logic
@@ -45,10 +51,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
   } catch (error) {
     console.error('Error adding child:', error);
 
-    if (error instanceof Error && error.message === 'Family not found') {
-      return notFound('Family not found');
+    if (error instanceof AppError) {
+      return appErrorResponse(error);
     }
 
-    return serverError('Failed to add child to family');
+    return serverError();
   }
 };

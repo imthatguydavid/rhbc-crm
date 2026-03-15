@@ -1,7 +1,8 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { checkOutChild } from '../services/checkInService.js';
-import { success, badRequest, notFound, serverError } from '../../shared/utils/response';
-import { CheckOutChildRequest } from '@rhbc-crm/shared';
+import { AppError } from '../../shared/utils/AppError';
+import { success, badRequest, serverError, appErrorResponse } from '../../shared/utils/response';
+import { CheckOutChildRequest, ERROR_CODE } from '@rhbc-crm/shared';
 
 /**
  * Lambda handler for POST /checkout
@@ -20,14 +21,17 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
   try {
     // Parse request body
     if (!event.body) {
-      return badRequest('Request body is required');
+      return badRequest(ERROR_CODE.MISSING_REQUIRED_FIELD, 'Request body is required');
     }
 
     const request: CheckOutChildRequest = JSON.parse(event.body);
 
     // Validate required fields
     if (!request.checkInId || !request.pin) {
-      return badRequest('Missing required fields: checkInId, pin');
+      return badRequest(
+        ERROR_CODE.MISSING_REQUIRED_FIELD,
+        'Missing required fields: checkInId, pin'
+      );
     }
 
     // Check out child with PIN verification
@@ -42,25 +46,10 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
   } catch (error) {
     console.error('Error in checkOutChild handler:', error);
 
-    if (error instanceof Error) {
-      // Handle specific error cases
-      if (error.message === 'Check-in not found') {
-        return notFound('Check-in record not found');
-      }
-      if (error.message === 'Invalid PIN') {
-        return badRequest('Incorrect PIN');
-      }
-      if (error.message === 'PIN must be 4 digits') {
-        // ← ADD THIS
-        return badRequest('PIN must be 4 digits');
-      }
-      if (error.message === 'Child already checked out') {
-        return badRequest('Child has already been checked out');
-      }
-
-      return serverError(error.message);
+    if (error instanceof AppError) {
+      return appErrorResponse(error);
     }
 
-    return serverError('Failed to check out child');
+    return serverError();
   }
 }

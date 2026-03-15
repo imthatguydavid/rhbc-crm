@@ -1,7 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { updatePerson } from '../services/familyService.js';
-import { success, badRequest, notFound, serverError } from '../../shared/utils/response.js';
-import { UpdatePersonRequest } from '@rhbc-crm/shared';
+import { success, badRequest, serverError, appErrorResponse } from '../../shared/utils/response.js';
+import { ERROR_CODE, UpdatePersonRequest } from '@rhbc-crm/shared';
+import { AppError } from '../../shared/utils/AppError';
 
 /**
  * Lambda handler for updating a person's information.
@@ -19,10 +20,14 @@ import { UpdatePersonRequest } from '@rhbc-crm/shared';
  */
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
+    if (!event.body) {
+      return badRequest(ERROR_CODE.MISSING_REQUIRED_FIELD, 'Request body is required');
+    }
+
     // Parse person ID from path
     const personId = event.pathParameters?.id;
     if (!personId) {
-      return badRequest('Person ID is required');
+      return badRequest(ERROR_CODE.MISSING_REQUIRED_FIELD, 'Person ID is required');
     }
 
     // Parse request body
@@ -31,12 +36,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
 
     // Validate at least one field is provided
     if (!firstName && !phone && !email) {
-      return badRequest('At least one field must be provided to update');
+      return badRequest(
+        ERROR_CODE.NO_UPDATE_FIELDS,
+        'At least one field must be provided to update'
+      );
     }
 
     // Validate firstName if provided
     if (firstName !== undefined && (typeof firstName !== 'string' || firstName.trim().length < 2)) {
-      return badRequest('firstName must be at least 2 characters');
+      return badRequest(ERROR_CODE.INVALID_FORMAT, 'firstName must be at least 2 characters');
     }
 
     // Update person
@@ -50,11 +58,10 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     return success({ person });
   } catch (error) {
     console.error('Error updating person:', error);
-
-    if (error instanceof Error && error.message === 'Person not found') {
-      return notFound('Person not found');
+    if (error instanceof AppError) {
+      return appErrorResponse(error);
     }
 
-    return serverError('Failed to update person');
+    return serverError();
   }
 };
