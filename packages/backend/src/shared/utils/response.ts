@@ -1,5 +1,5 @@
-import { ERROR_CODE } from '@rhbc-crm/shared';
-import type { ErrorCode } from '@rhbc-crm/shared';
+import { ERROR_CODE, type ErrorCode } from '@rhbc-crm/shared';
+import { AppError } from './AppError.js';
 
 /**
  * Standard API response format for AWS Lambda
@@ -73,4 +73,11 @@ export function notFound(code: ErrorCode, message: string): ApiResponse {
  */
 export function serverError(): ApiResponse {
   return errorResponse(500, ERROR_CODE.INTERNAL_ERROR, 'Internal server error');
+}
+
+/**
+ * Create error response from AppError
+ */
+export function appErrorResponse(error: AppError): ApiResponse {
+  return errorResponse(error.statusCode, error.code, error.message);
 }

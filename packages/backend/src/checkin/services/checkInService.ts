@@ -13,10 +13,13 @@ import {
   ValidatePinRequest,
   ValidatePinResponse,
   AdminCheckOutRequest,
+  ERROR_CODE,
+  CHECK_IN_STATUS,
+  CHECKOUT_METHOD,
 } from '@rhbc-crm/shared';
+import { AppError } from '../../shared/utils/AppError';
 import { dynamoDb, Tables } from '../../shared/utils/dynamodb';
 import { getPeopleByFamily } from '../../family/services/familyService';
-import { CHECK_IN_STATUS, CHECKOUT_METHOD } from '@rhbc-crm/shared';
 
 /**
  * Generates a random 6-character alphanumeric string for IDs
@@ -585,7 +588,7 @@ export async function adminCheckOut(
   const { checkedOutBy } = request;
 
   if (!checkedOutBy || !checkedOutBy.trim()) {
-    throw new Error('Name of person picking up is required');
+    throw new AppError(ERROR_CODE.MISSING_REQUIRED_FIELD, 'Name of person picking up is required');
   }
 
   try {
@@ -598,13 +601,13 @@ export async function adminCheckOut(
     );
 
     if (!getResult.Item) {
-      throw new Error('Check-in not found');
+      throw new AppError(ERROR_CODE.CHECKIN_NOT_FOUND, 'Check-in not found', 404);
     }
 
     const checkIn = getResult.Item as CheckIn;
     // Check if already checked out
     if (checkIn.status === CHECK_IN_STATUS.COMPLETED) {
-      throw new Error('Child already checked out');
+      throw new AppError(ERROR_CODE.ALREADY_CHECKED_OUT, 'Child already checked out');
     }
 
     // Update check-out time and status
