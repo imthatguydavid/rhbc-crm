@@ -51,8 +51,8 @@ import {
  */
 async function handleErrorResponse(response: Response, fallbackMessage: string): Promise<never> {
   try {
-    const error = await response.json();
-    throw new Error(error.error || error.message || fallbackMessage);
+    const data = await response.json();
+    throw new Error(data.error?.message || fallbackMessage);
   } catch {
     throw new Error(fallbackMessage);
   }

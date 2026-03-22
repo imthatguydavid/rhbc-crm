@@ -1,7 +1,7 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
 import { getAllFamilies } from '../services/familyService.js';
 import { success, serverError, badRequest, appErrorResponse } from '../../shared/utils/response.js';
-import { ERROR_CODE } from '@rhbc-crm/shared';
+import { ERROR_CODE, type Family, type Person } from '@rhbc-crm/shared';
 import { AppError } from '../../shared/utils/AppError';
 
 /**
@@ -21,6 +21,9 @@ import { AppError } from '../../shared/utils/AppError';
  *
  * Returns: 200 OK with array of families
  */
+
+type test = Family & { primaryParent?: Person };
+
 export const handler: APIGatewayProxyHandler = async (event) => {
   try {
     // Parse query parameters
@@ -33,7 +36,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     }
 
     // Get families with filters
-    const filters: any = {};
+    const filters: test = {};
     if (search) filters.search = search;
     if (status) filters.status = status;
 

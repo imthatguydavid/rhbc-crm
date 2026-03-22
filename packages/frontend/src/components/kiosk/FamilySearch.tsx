@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
-import type { Family } from '@rhbc-crm/shared';
 import { searchFamilies } from '@/utils/api';
 import { getFamilyStatusBadge } from '@/utils/badges';
-import { FAMILY_STATUS } from '@rhbc-crm/shared';
+import { FAMILY_STATUS, type Person, type Family } from '@rhbc-crm/shared';
 import { toast } from 'sonner';
 
 interface FamilySearchProps {
@@ -68,7 +67,7 @@ export function FamilySearch({ onSelectFamily }: FamilySearchProps) {
             <div className="p-8 text-center text-slate-500 text-xl">Searching...</div>
           ) : results.length > 0 ? (
             <div className="divide-y divide-slate-200">
-              {results.map((family: any) => {
+              {results.map((family: Family & { primaryParent?: Person }) => {
                 const parent = family.primaryParent;
 
                 return (
